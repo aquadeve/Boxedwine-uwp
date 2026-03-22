@@ -33,7 +33,9 @@ U32 sdlCustomEvent;
 static SDL_GameController* _gameControllers[NUM_CONTROLLERS] = { 0 };
 static std::bitset<AxisStateType::TYPE_COUNT> virtualAxisState; // Track state of axes invoked events to avoid spam
 
+#ifdef BOXEDWINE_UWP
 extern "C" __declspec(dllimport) void uwp_GetScreenSize(int*, int*);
+#endif
 
 
 KNativeInputSDL::KNativeInputSDL(U32 cx, U32 cy, int scaleX, int scaleY) {
@@ -48,7 +50,12 @@ KNativeInputSDL::KNativeInputSDL(U32 cx, U32 cy, int scaleX, int scaleY) {
     this->scaleXOffset = 0;
     this->scaleYOffset = 0;    
 
+#ifdef BOXEDWINE_UWP
     uwp_GetScreenSize(&this->fullWidth, &this->fullHeight);
+#else
+    this->fullWidth = (int)cx;
+    this->fullHeight = (int)cy;
+#endif
 
     refreshControllers();
 }

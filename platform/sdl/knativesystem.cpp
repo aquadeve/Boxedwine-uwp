@@ -179,14 +179,20 @@ BString KNativeSystem::getAppDirectory() {
 }
 
 BString KNativeSystem::getLocalDirectory() {
-    const char* s = "E:\\boxwine\\"; // SDL_GetPrefPath("", "Boxedwine");
+#ifdef BOXEDWINE_UWP
+    extern "C" __declspec(dllimport) void uwp_GetLocalDirectory(char* buffer);
+    char localPath[256] = { 0 };
+    uwp_GetLocalDirectory(localPath);
+    return BString::copy(localPath);
+#else
+    char* s = SDL_GetPrefPath("", "Boxedwine");
     BString result;
-
     if (s) {
         result = BString::copy(s);
-        //SDL_free(s);
+        SDL_free(s);
     }
     return result;
+#endif
 }
 
 bool KNativeSystem::clipboardHasText() {

@@ -1,4 +1,4 @@
-﻿/*
+/*
     Various helpers for UWP apps, add a new function if you need to interop between a dll and UWP calls
 */
 #include "pch.h"
@@ -20,6 +20,7 @@
 
 static int width = 0;
 static int height = 0;
+static winrt::Windows::UI::Core::CoreDispatcher g_uiDispatcher{ nullptr };
 
 using namespace winrt::Windows;
 using namespace ApplicationModel::Core;
@@ -31,6 +32,12 @@ using namespace UI::Core;
 using namespace UI::ViewManagement;
 
 
+void uwp_CaptureUIDispatcher()
+{
+    // Must be called from the UI thread (e.g. WinMain) before starting the SDL game loop.
+    g_uiDispatcher = CoreWindow::GetForCurrentThread().Dispatcher();
+}
+
 void uwp_GetBundlePath(char* buffer)
 {
     sprintf_s(buffer, 256, "%s", winrt::to_string(ApplicationModel::Package::Current().InstalledPath()).c_str());
@@ -41,46 +48,90 @@ void uwp_GetBundleFilePath(char* buffer, const char *filename)
     sprintf_s(buffer, 256, "%s\\%s", winrt::to_string(ApplicationModel::Package::Current().InstalledPath()).c_str(), filename);
 }
 
+void uwp_GetLocalDirectory(char* buffer)
+{
+    auto localFolder = ApplicationData::Current().LocalFolder();
+    std::string path = winrt::to_string(localFolder.Path());
+    sprintf_s(buffer, 256, "%s\\", path.c_str());
+}
+
+// Helper: dispatch a work item to the UI thread and block the calling thread until
+// the work item signals the provided HANDLE.
+static void runOnUIThread(std::function<void(HANDLE)> work)
+{
+    HANDLE hEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+    if (!hEvent) {
+        // Failed to create synchronisation event; run inline as fallback.
+        HANDLE dummy = nullptr;
+        work(dummy);
+        return;
+    }
+
+    if (g_uiDispatcher) {
+        g_uiDispatcher.RunAsync(CoreDispatcherPriority::Normal, [work, hEvent]() {
+            work(hEvent);
+        });
+    } else {
+        // No dispatcher captured yet; try to run inline (works when already on UI thread).
+        work(hEvent);
+    }
+
+    WaitForSingleObject(hEvent, INFINITE);
+    CloseHandle(hEvent);
+}
+
 // TODO: Restrict types?
 void uwp_PickAFile(char* buffer)
 {
-    std::string out = "";
+    std::wstring selected;
 
-    Pickers::FileOpenPicker filePicker;
+    runOnUIThread([&selected](HANDLE hDone) {
+        Pickers::FileOpenPicker filePicker;
+        filePicker.SuggestedStartLocation(Pickers::PickerLocationId::ComputerFolder);
+        filePicker.FileTypeFilter().ReplaceAll({ L"*" });
 
-    filePicker.SuggestedStartLocation(Pickers::PickerLocationId::ComputerFolder);
-    filePicker.FileTypeFilter().ReplaceAll({ L"*" });
+        filePicker.PickSingleFileAsync().Completed(
+            [&selected, hDone](auto op, auto status) {
+                if (status == AsyncStatus::Completed) {
+                    auto file = op.GetResults();
+                    if (file) {
+                        selected = std::wstring(file.Path().c_str());
+                    }
+                }
+                if (hDone) SetEvent(hDone);
+            });
+    });
 
-    StorageFile file = filePicker.PickSingleFileAsync().get();
-
-    if (file != nullptr) {
-        auto selected = file.Path();
-        out = std::string(selected.begin(), selected.end());
-    }
-
-    sprintf_s(buffer, 256, "%s", out.c_str());
+    std::string pathStr(selected.begin(), selected.end());
+    sprintf_s(buffer, 256, "%s", pathStr.c_str());
 }
 
 // Inspired by aerisarns impl in the gzdoom port
 void uwp_PickAFolder(char* buffer)
 {
-    std::string out = "";
+    std::wstring selected;
 
-    Pickers::FolderPicker folderPicker;
+    runOnUIThread([&selected](HANDLE hDone) {
+        Pickers::FolderPicker folderPicker;
+        folderPicker.SuggestedStartLocation(Pickers::PickerLocationId::ComputerFolder);
+        folderPicker.FileTypeFilter().ReplaceAll({ L"*" });
 
-    folderPicker.SuggestedStartLocation(Pickers::PickerLocationId::ComputerFolder);
-    folderPicker.FileTypeFilter().ReplaceAll({ L"*" });
+        folderPicker.PickSingleFolderAsync().Completed(
+            [&selected, hDone](auto op, auto status) {
+                if (status == AsyncStatus::Completed) {
+                    auto folder = op.GetResults();
+                    if (folder) {
+                        // Application now has read/write access to all contents in the picked folder
+                        StorageApplicationPermissions::FutureAccessList().AddOrReplace(L"PickedFolderToken", folder);
+                        selected = std::wstring(folder.Path().c_str());
+                    }
+                }
+                if (hDone) SetEvent(hDone);
+            });
+    });
 
-    StorageFolder folder = folderPicker.PickSingleFolderAsync().get();
-
-    if (folder != nullptr) {
-        // Application now has read/write access to all contents in the picked file
-        Storage::AccessCache::StorageApplicationPermissions::FutureAccessList().AddOrReplace(L"PickedFolderToken", folder);
-        auto selected = folder.Path();
-        out = std::string(selected.begin(), selected.end());
-    }
-
-    sprintf_s(buffer, 256, "%s", out.c_str());
+    std::string pathStr(selected.begin(), selected.end());
+    sprintf_s(buffer, 256, "%s", pathStr.c_str());
 }
 
 
