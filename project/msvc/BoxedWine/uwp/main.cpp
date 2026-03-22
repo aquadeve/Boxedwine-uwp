@@ -43,6 +43,10 @@
 #pragma comment(lib, "runtimeobject.lib")
 #endif
 
+// Capture the UI-thread dispatcher so that libuwp can later dispatch file-picker
+// dialogs back to the correct thread from the SDL game thread.
+extern "C" __declspec(dllimport) void uwp_CaptureUIDispatcher();
+
 typedef void (*pfnChangeGame)(const char* progname);
 typedef  int (*pfnInit)(int argc, int argv, const char* progname, int bChangeGame, pfnChangeGame func);
 
@@ -57,5 +61,9 @@ int _dead_SDL_main(int argc, char* argv[])
 // Entry point into app (Note, SDL doesn't like being init from here you must call SDL_main)
 int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR argv, int argc)
 {
+    // Capture the UI-thread CoreWindow dispatcher before SDL moves execution to a
+    // background thread.  This allows libuwp to show file-picker dialogs correctly.
+    uwp_CaptureUIDispatcher();
+
     return SDL_WinRTRunApp(SDL_main, NULL);
 }

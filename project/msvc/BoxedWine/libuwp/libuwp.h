@@ -10,6 +10,7 @@ LIBAPI void* uwp_GetWindowReference();
 // :: Filepaths
 LIBAPI void uwp_GetBundlePath(char* buffer);
 LIBAPI void uwp_GetBundleFilePath(char* buffer, const char* filename);
+LIBAPI void uwp_GetLocalDirectory(char* buffer);
 LIBAPI void uwp_PickAFile(char* buffer);
 LIBAPI void uwp_PickAFolder(char* buffer);
 
@@ -20,3 +21,9 @@ LIBAPI void uwp_ProcessEvents();
 
 // If not using SDL or other helper you must register event callbacks to read controller input
 LIBAPI void uwp_RegisterGamepadCallbacks(void (*callback)(void));
+
+// :: Threading helpers
+
+// Call this once from the UI thread (e.g. WinMain) before starting the game loop so that
+// file-picker dialogs can be dispatched back to the correct thread.
+LIBAPI void uwp_CaptureUIDispatcher();
