@@ -95,6 +95,9 @@ public:
     BString ddrawOverridePath;
     bool disableHideCursor = false;
 
+    /* Android APK emulation: path to the .apk file to run */
+    BString apkPath;
+
 private:
     bool workingDirSet = false;
     bool resolutionSet = false;
