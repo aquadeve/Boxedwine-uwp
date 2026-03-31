@@ -1,0 +1,6 @@
+MainPackage=C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_x64.msix
+SymbolPackage=C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\x64\Release\Symbols\uwp_1.0.0.0_x64.appxsym
+ResourcePack=C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-100.msix
+ResourcePack=C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-125.msix
+ResourcePack=C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-150.msix
+ResourcePack=C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-400.msix

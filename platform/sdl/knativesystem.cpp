@@ -14,6 +14,7 @@
 #ifdef BOXEDWINE_OPENGL_SDL
 #include "../../source/opengl/sdl/sdlgl.h"
 #endif
+#include "../../project/msvc/BoxedWine/libuwp/libuwp.h"
 
 #ifndef __TEST
 int boxedmain(int argc, const char** argv);
@@ -179,20 +180,18 @@ BString KNativeSystem::getAppDirectory() {
 }
 
 BString KNativeSystem::getLocalDirectory() {
-#ifdef BOXEDWINE_UWP
-    extern "C" __declspec(dllimport) void uwp_GetLocalDirectory(char* buffer);
     char localPath[256] = { 0 };
+#ifdef BOXEDWINE_UWP
     uwp_GetLocalDirectory(localPath);
-    return BString::copy(localPath);
 #else
     char* s = SDL_GetPrefPath("", "Boxedwine");
-    BString result;
     if (s) {
-        result = BString::copy(s);
+        BString result = BString::copy(s);
         SDL_free(s);
+        return result;
     }
-    return result;
 #endif
+    return BString::copy(localPath);
 }
 
 bool KNativeSystem::clipboardHasText() {
@@ -233,3 +232,7 @@ void KNativeSystem::preReturnToUI() {
     SDL_PumpEvents();
     SDL_FlushEvent(SDL_QUIT);
 }
+
+#ifdef BOXEDWINE_UWP
+extern "C" __declspec(dllimport) void uwp_GetLocalDirectory(char* buffer);
+#endif

@@ -4,6 +4,8 @@
 #include "pch.h"
 #include "libuwp.h"
 
+#include <functional>
+
 #include <winrt/Windows.ApplicationModel.Core.h>
 #include <winrt/Windows.Gaming.Input.h>
 #include <winrt/Windows.UI.Composition.h>
@@ -149,7 +151,7 @@ void uwp_GetScreenSize(int* x, int* y)
 
 float uwp_GetRefreshRate()
 {
-    return HdmiDisplayInformation::GetForCurrentView().GetCurrentDisplayMode().RefreshRate();
+    return static_cast<float>(HdmiDisplayInformation::GetForCurrentView().GetCurrentDisplayMode().RefreshRate());
 }
 
 void* uwp_GetWindowReference()

@@ -1,0 +1,1 @@
+C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\uwp.vcxproj;x64

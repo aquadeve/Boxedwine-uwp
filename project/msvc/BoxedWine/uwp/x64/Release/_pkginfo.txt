@@ -1,0 +1,1 @@
+C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\AppPackages\uwp\uwp_1.0.0.0_Test\uwp_1.0.0.0_x64.msixbundle

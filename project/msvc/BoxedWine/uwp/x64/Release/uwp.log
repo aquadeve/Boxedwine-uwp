@@ -1,0 +1,9 @@
+﻿  uwp.vcxproj -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp.exe
+Package.appxmanifest(49,6): warning APPX0006: This project uses the 'runFullTrust' capability. You should use the Windows Application Packaging Project to produce the store and sideload packages. See https://go.microsoft.com/fwlink/?linkid=871803 for more information.
+  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_x64.msix
+  uwp -> x64\Release\Symbols\uwp_1.0.0.0_x64.appxsym
+  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-100.msix
+  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-125.msix
+  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-150.msix
+  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-400.msix
+  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\AppPackages\uwp\uwp_1.0.0.0_Test\uwp_1.0.0.0_x64.msixbundle
