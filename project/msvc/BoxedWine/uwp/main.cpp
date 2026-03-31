@@ -145,9 +145,11 @@ extern "C" int SDL_main(int argc, char *argv[])
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX_ONE, "1");
     // Ensure the virtual cursor is visible (useful on Xbox when no mouse)
     SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
+    // Try Direct3D11, but let SDL fall back if it fails
+    // SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d11"); // Don't force software renderer, let SDL choose the best available
 
     // Initialise SDL for display, input, and game controllers
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) < 0) {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
         return 1;
     }
@@ -165,6 +167,11 @@ extern "C" int SDL_main(int argc, char *argv[])
     }
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer) {
+        SDL_Log("Accelerated renderer failed, trying software...");
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    }
+
     if (!renderer) {
         SDL_Log("SDL_CreateRenderer failed: %s", SDL_GetError());
         SDL_DestroyWindow(window);
@@ -190,8 +197,8 @@ extern "C" int SDL_main(int argc, char *argv[])
     float virtual_cursor_y = config.screen_height / 2.0f;
 
     // Initialise the Android emulator
-    AndroidEmulator emu = {};
-    if (!android_emulator_init(&emu, &config)) {
+    AndroidEmulator *emu = new AndroidEmulator{};
+    if (!android_emulator_init(emu, &config)) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
             "Boxedwine Android",
             "Failed to initialise Android emulator.\n"
@@ -214,7 +221,7 @@ extern "C" int SDL_main(int argc, char *argv[])
     const float CURSOR_SPEED = 10.0f;
     const int16_t STICK_DEADZONE = 8000;
 
-    while (!quit && emu.cpu.running) {
+    while (!quit && emu->cpu.running) {
         // Process host OS events
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -226,7 +233,7 @@ extern "C" int SDL_main(int argc, char *argv[])
                 // --- Mouse input (PC / desktop UWP) ---
                 case SDL_MOUSEBUTTONDOWN:
                 case SDL_MOUSEBUTTONUP:
-                    android_emulator_touch(&emu,
+                    android_emulator_touch(emu,
                         event.type == SDL_MOUSEBUTTONDOWN ? 0 : 1,
                         event.button.x, event.button.y, 0);
                     break;
@@ -239,7 +246,7 @@ extern "C" int SDL_main(int argc, char *argv[])
                                  (event.type == SDL_FINGERUP)   ? 1 : 2;
                     int fx = (int)(event.tfinger.x * config.screen_width);
                     int fy = (int)(event.tfinger.y * config.screen_height);
-                    android_emulator_touch(&emu, action, fx, fy,
+                    android_emulator_touch(emu, action, fx, fy,
                                            (int)event.tfinger.fingerId);
                     break;
                 }
@@ -247,7 +254,7 @@ extern "C" int SDL_main(int argc, char *argv[])
                 // --- Keyboard input ---
                 case SDL_KEYDOWN:
                 case SDL_KEYUP:
-                    android_emulator_key(&emu,
+                    android_emulator_key(emu,
                         event.type == SDL_KEYDOWN ? 0 : 1,
                         event.key.keysym.sym);
                     break;
@@ -292,7 +299,7 @@ extern "C" int SDL_main(int argc, char *argv[])
             int16_t rt = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
 
             // Send structured gamepad event
-            android_emulator_gamepad(&emu, buttons, lx, ly, rx, ry, lt, rt);
+            android_emulator_gamepad(emu, buttons, lx, ly, rx, ry, lt, rt);
 
             // ---- Virtual cursor via right stick (for touch emulation on Xbox) ----
             if (rx > STICK_DEADZONE || rx < -STICK_DEADZONE)
@@ -310,15 +317,15 @@ extern "C" int SDL_main(int argc, char *argv[])
             static bool a_was_pressed = false;
             bool a_pressed = (buttons & AGAMEPAD_A) != 0;
             if (a_pressed && !a_was_pressed)
-                android_emulator_touch(&emu, 0, (int)virtual_cursor_x, (int)virtual_cursor_y, 0);
+                android_emulator_touch(emu, 0, (int)virtual_cursor_x, (int)virtual_cursor_y, 0);
             if (!a_pressed && a_was_pressed)
-                android_emulator_touch(&emu, 1, (int)virtual_cursor_x, (int)virtual_cursor_y, 0);
+                android_emulator_touch(emu, 1, (int)virtual_cursor_x, (int)virtual_cursor_y, 0);
             a_was_pressed = a_pressed;
         }
 
         // Execute emulated CPU instructions for this frame
-        if (emu.cpu.running) {
-            android_emulator_step(&emu, CPU_STEPS_PER_FRAME);
+        if (emu->cpu.running) {
+            android_emulator_step(emu, CPU_STEPS_PER_FRAME);
         }
 
         // Render: present emulated framebuffer (placeholder: clear to dark grey)
@@ -338,10 +345,10 @@ extern "C" int SDL_main(int argc, char *argv[])
     }
 
     if (config.verbosity >= 1)
-        SDL_Log("Android emulator exited with code %d", emu.exit_code);
+        SDL_Log("Android emulator exited with code %d", emu->exit_code);
 
-    int exit_code = emu.exit_code;
-    android_emulator_destroy(&emu);
+    int exit_code = emu->exit_code;
+    android_emulator_destroy(emu);
     if (gamepad) SDL_GameControllerClose(gamepad);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
