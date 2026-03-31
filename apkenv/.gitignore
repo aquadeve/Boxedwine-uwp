@@ -1,0 +1,10 @@
+*.d
+*.o
+cscope.out
+tags
+out
+apkenv
+*.apkenv.so
+libdvm_compat.so
+hostui
+compat/gen/gles_serialize.c
