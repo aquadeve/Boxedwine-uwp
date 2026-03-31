@@ -24,6 +24,8 @@ LIBAPI void uwp_RegisterGamepadCallbacks(void (*callback)(void));
 
 // :: Threading helpers
 
-// Call this once from the UI thread (e.g. WinMain) before starting the game loop so that
-// file-picker dialogs can be dispatched back to the correct thread.
+// Call this once from the UI thread after CoreApplication::Run() has created
+// the CoreWindow (e.g. at the start of SDL_main) so that file-picker dialogs
+// can be dispatched back to the correct thread.  Do NOT call from WinMain —
+// at that point no CoreWindow exists yet and the call would crash.
 LIBAPI void uwp_CaptureUIDispatcher();

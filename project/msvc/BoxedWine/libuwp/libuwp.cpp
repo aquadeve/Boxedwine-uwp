@@ -36,8 +36,13 @@ using namespace UI::ViewManagement;
 
 void uwp_CaptureUIDispatcher()
 {
-    // Must be called from the UI thread (e.g. WinMain) before starting the SDL game loop.
-    g_uiDispatcher = CoreWindow::GetForCurrentThread().Dispatcher();
+    // Must be called from the UI thread after CoreApplication::Run() has created
+    // the CoreWindow (e.g. at the start of SDL_main).  Calling earlier — such as
+    // from WinMain — will crash because no CoreWindow exists yet.
+    auto coreWindow = CoreWindow::GetForCurrentThread();
+    if (coreWindow) {
+        g_uiDispatcher = coreWindow.Dispatcher();
+    }
 }
 
 void uwp_GetBundlePath(char* buffer)

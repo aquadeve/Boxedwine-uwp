@@ -69,6 +69,10 @@ static uint32_t poll_gamepad_buttons(SDL_GameController *gc)
 // -------------------------------------------------------------------------
 extern "C" int SDL_main(int argc, char *argv[])
 {
+    // Capture the UI-thread CoreWindow dispatcher now that CoreApplication::Run()
+    // has created the CoreWindow.  This must happen before any file-picker calls.
+    uwp_CaptureUIDispatcher();
+
     // Default configuration
     AndroidEmulatorConfig config = {};
     config.screen_width  = 1280;
@@ -335,9 +339,10 @@ extern "C" int SDL_main(int argc, char *argv[])
 // Entry point into UWP / Xbox One app
 int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR argv, int argc)
 {
-    // Capture the UI-thread CoreWindow dispatcher before SDL moves execution to a
-    // background thread.  This allows libuwp to show file-picker dialogs correctly.
-    uwp_CaptureUIDispatcher();
+    // NOTE: uwp_CaptureUIDispatcher() is called from SDL_main(), not here.
+    // At WinMain time, CoreApplication::Run() has not yet created a CoreWindow,
+    // so CoreWindow::GetForCurrentThread() would return nullptr and crash.
+    // By the time SDL_main() runs, the CoreWindow is fully initialised.
 
     return SDL_WinRTRunApp(SDL_main, NULL);
 }
