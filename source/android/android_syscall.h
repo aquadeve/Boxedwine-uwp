@@ -22,6 +22,7 @@
 #define __ANDROID_SYSCALL_H__
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include "../emulation/cpu/arm/armv7_interpreter.h"
 

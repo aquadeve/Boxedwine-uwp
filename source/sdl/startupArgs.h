@@ -40,7 +40,7 @@ public:
     bool loadDefaultResource(const char* app);
     bool parseStartupArgs(int argc, const char **argv);
     bool apply();
-    bool shouldStartUI() {return this->args.size()==0;}
+    bool shouldStartUI() {return this->args.size()==0 && this->apkPath.isEmpty();}
 
     void setWorkingDir(BString path) {this->workingDir = path; this->workingDirSet=true;}
     void setResolution(BString path);

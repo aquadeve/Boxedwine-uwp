@@ -322,23 +322,6 @@ static void exec_arm_ldm_stm(ArmV7State *cpu, uint32_t instr) {
     if (P && U)  addr += 4;
     if (P && !U) addr -= 4;  /* will be incremented below */
 
-    for (int i = 0; i <= 15; i++) {
-        if (!((list >> i) & 1)) continue;
-        if (!U) {
-            /* descending: load/store from high to low */
-        }
-        uint32_t ea = start + (U ? 0 : 0);
-        /* Proper address calculation */
-        if (U) {
-            if (P) addr = start + 4; else addr = start;
-        } else {
-            addr = start; /* already adjusted */
-        }
-        /* Simple sequential addressing */
-        (void)addr;
-        break;
-    }
-
     /* Simplified LDM/STM: iterate in natural order */
     addr = U ? base : (base - (uint32_t)count * 4);
     if (P && U)  addr += 4;

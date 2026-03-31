@@ -25,6 +25,7 @@
 #  define HOST_MKDIR(p,m) CreateDirectoryA(p, NULL)
 #else
 #  include <sys/stat.h>
+#  include <sys/time.h>
 #  include <fcntl.h>
 #  include <unistd.h>
 #  define HOST_MKDIR(p,m) mkdir(p, m)
@@ -125,27 +126,30 @@ const char *android_syscall_translate_path(const AndroidSyscallState *state,
 
 /* -------------------------------------------------------------------------
  * Emulated stat64 structure (Android ARM 32-bit layout)
+ *
+ * Field names use emu_ prefix to avoid clashing with POSIX st_atime/st_mtime/st_ctime
+ * macros that some systems define as member-accessor macros.
  * ---------------------------------------------------------------------- */
 typedef struct {
-    uint64_t st_dev;
-    uint8_t  __pad0[4];
-    uint32_t __st_ino;
-    uint32_t st_mode;
-    uint32_t st_nlink;
-    uint32_t st_uid;
-    uint32_t st_gid;
-    uint64_t st_rdev;
-    uint8_t  __pad3[4];
-    int64_t  st_size;
-    uint32_t st_blksize;
-    uint64_t st_blocks;
-    uint32_t st_atime;
-    uint32_t st_atime_nsec;
-    uint32_t st_mtime;
-    uint32_t st_mtime_nsec;
-    uint32_t st_ctime;
-    uint32_t st_ctime_nsec;
-    uint64_t st_ino;
+    uint64_t emu_st_dev;
+    uint8_t  emu_pad0[4];
+    uint32_t emu_st_ino_old;
+    uint32_t emu_st_mode;
+    uint32_t emu_st_nlink;
+    uint32_t emu_st_uid;
+    uint32_t emu_st_gid;
+    uint64_t emu_st_rdev;
+    uint8_t  emu_pad3[4];
+    int64_t  emu_st_size;
+    uint32_t emu_st_blksize;
+    uint64_t emu_st_blocks;
+    uint32_t emu_st_atime_sec;
+    uint32_t emu_st_atime_nsec;
+    uint32_t emu_st_mtime_sec;
+    uint32_t emu_st_mtime_nsec;
+    uint32_t emu_st_ctime_sec;
+    uint32_t emu_st_ctime_nsec;
+    uint64_t emu_st_ino;
 } AndroidStat64;
 
 /* -------------------------------------------------------------------------
@@ -315,9 +319,9 @@ void android_syscall_dispatch(ArmV7State *cpu, AndroidSyscallState *state, uint3
             AndroidStat64 st;
             memset(&st, 0, sizeof(st));
             /* Fake a regular file */
-            st.st_mode = 0x81A4; /* S_IFREG | 0644 */
-            st.st_nlink = 1;
-            st.st_size = 0;
+            st.emu_st_mode = 0x81A4; /* S_IFREG | 0644 */
+            st.emu_st_nlink = 1;
+            st.emu_st_size = 0;
             if (arg1 + sizeof(st) <= state->mem_size)
                 memcpy(state->mem + arg1, &st, sizeof(st));
             cpu->r[0] = 0;

@@ -245,6 +245,10 @@ std::vector<BString> StartUpArgs::buildArgs() {
     if (this->disableHideCursor) {
         args.push_back(B("-disableHideCursor"));
     }
+    if (!this->apkPath.isEmpty()) {
+        args.push_back(B("-apk"));
+        args.push_back(this->apkPath);
+    }
     return args;
 }
 
