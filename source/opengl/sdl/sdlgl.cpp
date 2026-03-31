@@ -89,6 +89,11 @@ SDLGlWindowPtr SDLGlWindow::createWindow(const std::shared_ptr<GLPixelFormat>& p
     SDL_GL_SetAttribute(SDL_GL_ACCUM_BLUE_SIZE, pixelFormat->pf.cAccumBlueBits);
     SDL_GL_SetAttribute(SDL_GL_ACCUM_ALPHA_SIZE, pixelFormat->pf.cAccumAlphaBits);
 
+#if defined(BOXEDWINE_UWP_EGL)
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#else
     if (major) {
         if (major >= 3) {
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -98,6 +103,7 @@ SDLGlWindowPtr SDLGlWindow::createWindow(const std::shared_ptr<GLPixelFormat>& p
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
         //#endif
     }
+#endif
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, (pixelFormat->pf.dwFlags & K_PFD_DOUBLEBUFFER) ? 1 : 0);
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, (pixelFormat->pf.dwFlags & K_PFD_GENERIC_FORMAT) ? 0 : 1);
 
