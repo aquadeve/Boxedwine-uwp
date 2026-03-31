@@ -466,7 +466,7 @@ void android_syscall_dispatch(ArmV7State *cpu, AndroidSyscallState *state, uint3
         case SYS_ARM_pread64: {
             void *fp = get_host_fp(state, (int)arg0);
             if (!fp) { cpu->r[0] = (uint32_t)-9; return; }
-            long offset = ((long)arg4 << 32) | (long)arg3;
+            long long offset = ((long long)arg4 << 32) | (long long)arg3;
             long pos = ftell((FILE*)fp);
             fseek((FILE*)fp, offset, SEEK_SET);
             size_t n = fread(state->mem + arg1, 1, arg2, (FILE*)fp);

@@ -15,6 +15,11 @@
 #include <string.h>
 #include <stdarg.h>
 
+/* MSVC deprecates POSIX strdup; use the conformant name */
+#ifdef _MSC_VER
+#define strdup _strdup
+#endif
+
 /* Forward declaration of the interface struct (defined further down) */
 struct JNINativeInterface_;
 

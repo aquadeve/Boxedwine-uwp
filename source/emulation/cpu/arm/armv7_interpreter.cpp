@@ -16,6 +16,12 @@
 #include <stdio.h>
 #include <math.h>
 
+/* MSVC does not provide __builtin_popcount; use the intrinsic instead */
+#ifdef _MSC_VER
+#include <intrin.h>
+#define __builtin_popcount __popcnt
+#endif
+
 /* =========================================================================
  * Helpers
  * ========================================================================= */
