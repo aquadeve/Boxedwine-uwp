@@ -93,6 +93,11 @@ extern "C" void D3D11_Trim(SDL_Renderer *);
 // SDL_CreateWindow().
 SDL_WinRTApp ^ SDL_WinRTGlobalApp = nullptr;
 
+// Stores the file path when the app is launched via file type association
+// (e.g. user double-clicks an .apk file).  Populated in OnAppActivated(),
+// consumed in Run() where it is forwarded to SDL_main via argv.
+static std::string g_fileActivationPath;
+
 ref class SDLApplicationSource sealed : Windows::ApplicationModel::Core::IFrameworkViewSource
 {
 public:
@@ -423,11 +428,17 @@ void SDL_WinRTApp::Run()
     SDL_SetMainReady();
     if (WINRT_SDLAppEntryPoint)
     {
-        // TODO, WinRT: pass the C-style main() a reasonably realistic
-        // representation of command line arguments.
-        int argc = 0;
-        char **argv = NULL;
-        WINRT_SDLAppEntryPoint(argc, argv);
+        if (!g_fileActivationPath.empty()) {
+            // App was launched via file type association (e.g. user opened an .apk)
+            char arg0[] = "uwp";
+            char *argv_buf[] = { arg0, &g_fileActivationPath[0], nullptr };
+            WINRT_SDLAppEntryPoint(2, argv_buf);
+        } else {
+            // Normal launch with no file arguments
+            int argc = 0;
+            char **argv = NULL;
+            WINRT_SDLAppEntryPoint(argc, argv);
+        }
     }
 }
 
@@ -667,6 +678,28 @@ void SDL_WinRTApp::OnWindowClosed(CoreWindow^ sender, CoreWindowEventArgs^ args)
 
 void SDL_WinRTApp::OnAppActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^ args)
 {
+    // If the app was activated via file type association, extract the file path
+    // so that Run() can forward it to SDL_main as a command-line argument.
+    if (args->Kind == ActivationKind::File) {
+        auto fileArgs = dynamic_cast<FileActivatedEventArgs^>(args);
+        if (fileArgs && fileArgs->Files->Size > 0) {
+            auto storageItem = fileArgs->Files->GetAt(0);
+            if (storageItem && storageItem->Path) {
+                std::wstring wpath(storageItem->Path->Data(),
+                                   storageItem->Path->Length());
+                int needed = WideCharToMultiByte(CP_UTF8, 0,
+                    wpath.c_str(), (int)wpath.size(),
+                    nullptr, 0, nullptr, nullptr);
+                if (needed > 0) {
+                    g_fileActivationPath.resize(needed);
+                    WideCharToMultiByte(CP_UTF8, 0,
+                        wpath.c_str(), (int)wpath.size(),
+                        &g_fileActivationPath[0], needed,
+                        nullptr, nullptr);
+                }
+            }
+        }
+    }
     CoreWindow::GetForCurrentThread()->Activate();
 }
 

@@ -64,8 +64,26 @@ void uwp_GetLocalDirectory(char* buffer)
 
 // Helper: dispatch a work item to the UI thread and block the calling thread until
 // the work item signals the provided HANDLE.
+// If already on the UI thread, runs the work inline and pumps events until the
+// async work signals completion (avoids deadlock).
 static void runOnUIThread(std::function<void(HANDLE)> work)
 {
+    // If we're already on the UI thread, run inline with event pumping to
+    // avoid deadlocking on WaitForSingleObject.
+    if (g_uiDispatcher && g_uiDispatcher.HasThreadAccess()) {
+        HANDLE hEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+        work(hEvent ? hEvent : nullptr);
+        if (hEvent) {
+            // Pump UI events until the async work signals completion
+            while (WaitForSingleObject(hEvent, 0) == WAIT_TIMEOUT) {
+                g_uiDispatcher.ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+                Sleep(10);
+            }
+            CloseHandle(hEvent);
+        }
+        return;
+    }
+
     HANDLE hEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
     if (!hEvent) {
         // Failed to create synchronisation event; run inline as fallback.

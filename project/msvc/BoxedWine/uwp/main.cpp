@@ -39,6 +39,9 @@
 // dialogs back to the correct thread from the SDL game thread.
 extern "C" __declspec(dllimport) void uwp_CaptureUIDispatcher();
 
+// Show a system file picker and write the selected path into buffer (max 256 chars).
+extern "C" __declspec(dllimport) void uwp_PickAFile(char* buffer);
+
 // -------------------------------------------------------------------------
 // Helper: build a gamepad button bitmask from an SDL_GameController
 // -------------------------------------------------------------------------
@@ -107,12 +110,22 @@ extern "C" int SDL_main(int argc, char *argv[])
         }
     }
 
+    // If no APK was provided (either via file activation or command-line args),
+    // show a file picker so the user can select one.
+    static char picked_path[256] = {};
+    if (!config.apk_path) {
+        uwp_PickAFile(picked_path);
+        if (picked_path[0] != '\0' && strstr(picked_path, ".apk")) {
+            config.apk_path = picked_path;
+        }
+    }
+
     if (!config.apk_path) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
             "Boxedwine Android",
             "No APK file specified.\n\n"
             "Usage: boxedwine-android --apk <path-to.apk>\n\n"
-            "Drag and drop an APK file onto the application, or pass\n"
+            "Open an .apk file from File Explorer, or pass\n"
             "the path as a command-line argument.",
             nullptr);
         return 1;
