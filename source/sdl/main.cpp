@@ -25,6 +25,9 @@
 #include "../ui/data/globalSettings.h"
 #endif
 #include "knativesystem.h"
+#ifdef BOXEDWINE_UWP
+#include "uwpLauncher.h"
+#endif
 
 #ifdef BOXEDWINE_MSVC
 #include <Windows.h>
@@ -107,6 +110,11 @@ int boxedmain(int argc, const char **argv) {
         if (StartUpArgs::uiType == UI_TYPE_UNSET) {
             StartUpArgs::uiType = UI_TYPE_OPENGL;
         }
+#endif
+#ifdef BOXEDWINE_UWP
+        // On UWP, show the mode-selector overlay (Wine / apkenv / Bash) before
+        // the Wine container browser so the user can choose what to run.
+        uwpScheduleModeSelectorUI();
 #endif
         while (true) {
             if (GlobalSettings::keepUIRunning) {

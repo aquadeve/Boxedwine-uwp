@@ -15,6 +15,11 @@
 #define VSYNC_ADAPTIVE 2
 #define VSYNC_DEFAULT VSYNC_DISABLED
 
+// Launch mode: determines what binary the emulated Linux kernel runs
+#define LAUNCH_MODE_WINE   0   // Run Wine (Windows app emulation) -- default
+#define LAUNCH_MODE_APKENV 1   // Run apkenv (Android APK emulation)
+#define LAUNCH_MODE_BASH   2   // Run bash terminal for debugging
+
 class MountInfo {
 public:
     MountInfo(BString localPath, BString nativePath, bool wine) : localPath(localPath), nativePath(nativePath), wine(wine){}
@@ -40,7 +45,12 @@ public:
     bool loadDefaultResource(const char* app);
     bool parseStartupArgs(int argc, const char **argv);
     bool apply();
-    bool shouldStartUI() {return this->args.size()==0;}
+    bool shouldStartUI() {
+        // apkenv with an explicit APK path, or bash mode: skip the UI and launch directly
+        if (this->launchMode == LAUNCH_MODE_BASH) return false;
+        if (this->launchMode == LAUNCH_MODE_APKENV && !this->apkPath.isEmpty()) return false;
+        return this->args.size()==0;
+    }
 
     void setWorkingDir(BString path) {this->workingDir = path; this->workingDirSet=true;}
     void setResolution(BString path);
@@ -94,6 +104,11 @@ public:
 
     BString ddrawOverridePath;
     bool disableHideCursor = false;
+
+    // Launch mode (LAUNCH_MODE_WINE / LAUNCH_MODE_APKENV / LAUNCH_MODE_BASH)
+    int launchMode = LAUNCH_MODE_WINE;
+    // Path to an Android APK; only used when launchMode == LAUNCH_MODE_APKENV
+    BString apkPath;
 
 private:
     bool workingDirSet = false;
