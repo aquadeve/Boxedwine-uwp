@@ -240,6 +240,10 @@
       <AdditionalIncludeDirectories>
 		$(SolutionDir)deps\include;
 		$(ProjectDir);
+		$(ProjectDir)..\..\..\..\source\android;
+		$(ProjectDir)..\..\..\..\source;
+		$(ProjectDir)..\..\..\..\lib\zlib;
+		$(ProjectDir)..\..\..\..\lib\zlib\contrib\minizip;
 		$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -271,6 +275,10 @@
       <AdditionalIncludeDirectories>
 	      	      $(SolutionDir)deps\include;
 		      $(ProjectDir);
+		      $(ProjectDir)..\..\..\..\source\android;
+		      $(ProjectDir)..\..\..\..\source;
+		      $(ProjectDir)..\..\..\..\lib\zlib;
+		      $(ProjectDir)..\..\..\..\lib\zlib\contrib\minizip;
 		      $(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -340,6 +348,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <!-- Android emulator core -->
+    <ClCompile Include="..\..\..\..\source\android\android_emulator.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\apk_loader.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_linker.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_jni.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_syscall.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_env.cpp" />
+    <!-- ARMv7 CPU interpreter -->
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\arm\armv7_interpreter.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
