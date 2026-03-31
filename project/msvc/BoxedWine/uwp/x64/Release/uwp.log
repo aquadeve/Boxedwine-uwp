@@ -1,9 +1,14 @@
-﻿  uwp.vcxproj -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp.exe
-Package.appxmanifest(49,6): warning APPX0006: This project uses the 'runFullTrust' capability. You should use the Windows Application Packaging Project to produce the store and sideload packages. See https://go.microsoft.com/fwlink/?linkid=871803 for more information.
-  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_x64.msix
-  uwp -> x64\Release\Symbols\uwp_1.0.0.0_x64.appxsym
-  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-100.msix
-  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-125.msix
-  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-150.msix
-  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp_1.0.0.0_scale-400.msix
-  uwp -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\AppPackages\uwp\uwp_1.0.0.0_Test\uwp_1.0.0.0_x64.msixbundle
+﻿  main.cpp
+  android_emulator.cpp
+  apk_loader.cpp
+  android_linker.cpp
+  android_jni.cpp
+  android_syscall.cpp
+  android_env.cpp
+  armv7_interpreter.cpp
+C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\android\android_jni.cpp(53,20): error C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _strdup. See online help for details.
+C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\android\android_jni.cpp(478,15): error C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _strdup. See online help for details.
+C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\emulation\cpu\arm\armv7_interpreter.cpp(318,22): error C3861: '__builtin_popcount': identifier not found
+C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\emulation\cpu\arm\armv7_interpreter.cpp(651,34): error C3861: '__builtin_popcount': identifier not found
+C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\android\android_syscall.cpp(469,39): warning C4293: '<<': shift count negative or too big, undefined behavior
+C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\XamlCompiler\Microsoft.Windows.UI.Xaml.Common.targets(486,5): error MSB4181: The "CompileXaml" task returned false but did not log an error.
