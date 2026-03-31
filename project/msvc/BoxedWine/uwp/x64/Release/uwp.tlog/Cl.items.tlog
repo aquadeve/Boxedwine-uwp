@@ -1,8 +1,0 @@
-C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\main.cpp;C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\x64\Release\main.obj
-C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\android\android_emulator.cpp;C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\x64\Release\android_emulator.obj
-C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\android\apk_loader.cpp;C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\x64\Release\apk_loader.obj
-C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\android\android_linker.cpp;C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\x64\Release\android_linker.obj
-C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\android\android_jni.cpp;C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\x64\Release\android_jni.obj
-C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\android\android_syscall.cpp;C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\x64\Release\android_syscall.obj
-C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\android\android_env.cpp;C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\x64\Release\android_env.obj
-C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\source\emulation\cpu\arm\armv7_interpreter.cpp;C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\x64\Release\armv7_interpreter.obj

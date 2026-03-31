@@ -1,2 +1,0 @@
-﻿  uwp.vcxproj -> C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\x64\Release\uwp\uwp.exe
-Package.appxmanifest(62,6): warning APPX0006: This project uses the 'runFullTrust' capability. You should use the Windows Application Packaging Project to produce the store and sideload packages. See https://go.microsoft.com/fwlink/?linkid=871803 for more information.

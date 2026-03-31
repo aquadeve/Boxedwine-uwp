@@ -370,6 +370,11 @@
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <!-- Deploy libuwp.dll built from the libuwp project (not a prebuilt copy) -->
+    <Content Include="$(SolutionDir)x64\Release\libuwp\libuwp.dll">
+      <Link>libuwp.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="$(SolutionDir)/deps/pointer_arrow.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
