@@ -12,6 +12,20 @@
  */
 #define BOXEDWINE_ANDROID 1
 
+/*
+ * BOXEDWINE_XBOX: Auto-detected when targeting Xbox One / Xbox Series via UWP.
+ * On Xbox, the primary input is the gamepad controller.  The emulator maps
+ * Xbox controller buttons to Android KEYCODE_BUTTON_* events and uses the
+ * right stick as a virtual cursor for touch emulation.
+ *
+ * The MSVC predefined macro _GAMING_XBOX_XBOXONE is set when the Xbox GDK
+ * target is selected.  For UWP-only Xbox builds we additionally check
+ * WINAPI_FAMILY_PARTITION.
+ */
+#if defined(_GAMING_XBOX_XBOXONE) || defined(_GAMING_XBOX_SCARLETT)
+#  define BOXEDWINE_XBOX 1
+#endif
+
 #include <vector>
 #include <memory>
 #include <queue>

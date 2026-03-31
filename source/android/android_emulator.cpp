@@ -525,6 +525,92 @@ void android_emulator_key(AndroidEmulator *emu, int action, int keycode) {
     android_emulator_step(emu, 100000);
 }
 
+void android_emulator_gamepad(AndroidEmulator *emu,
+                              uint32_t button_mask,
+                              int16_t left_x,  int16_t left_y,
+                              int16_t right_x, int16_t right_y,
+                              int16_t left_trigger, int16_t right_trigger) {
+    /*
+     * Map gamepad state to Android input events.
+     *
+     * Many native Android games register "nativeOnGamepad" or similar JNI
+     * callbacks.  We also translate D-pad and buttons into Android keycodes
+     * that the app might read via nativeOnKey.
+     *
+     * For apps that use the NativeActivity input queue, the events would be
+     * pushed into the AInputQueue.  This stub implementation dispatches
+     * through the JNI handler we found during linking.
+     */
+
+    /* Try the dedicated gamepad handler first */
+    uint32_t va = android_jni_find_native(&emu->jni, "nativeOnGamepad");
+    if (va) {
+        emu->cpu.r[0] = button_mask;
+        emu->cpu.r[1] = (uint32_t)(int32_t)left_x;
+        emu->cpu.r[2] = (uint32_t)(int32_t)left_y;
+        emu->cpu.r[3] = (uint32_t)(int32_t)right_x;
+        /* Additional args through the emulated stack if needed */
+        emu->cpu.r[ARM_LR] = 0;
+        if (va & 1) { emu->cpu.cpsr |= ARM_CPSR_T; emu->cpu.r[ARM_PC] = va & ~1u; }
+        else        { emu->cpu.cpsr &= ~ARM_CPSR_T; emu->cpu.r[ARM_PC] = va; }
+        android_emulator_step(emu, 100000);
+        return;
+    }
+
+    /* Fallback: translate D-pad and A/B buttons to Android keycodes via nativeOnKey */
+    /* Android keycodes: DPAD_UP=19, DPAD_DOWN=20, DPAD_LEFT=21, DPAD_RIGHT=22,
+     * BUTTON_A=96, BUTTON_B=97, BUTTON_X=99, BUTTON_Y=100,
+     * BUTTON_L1=102, BUTTON_R1=103, BUTTON_SELECT=109, BUTTON_START=108 */
+    static const struct { uint32_t mask; int keycode; } mapping[] = {
+        { 1u << 12, 19 },  /* DPAD_UP    */
+        { 1u << 13, 20 },  /* DPAD_DOWN  */
+        { 1u << 14, 21 },  /* DPAD_LEFT  */
+        { 1u << 15, 22 },  /* DPAD_RIGHT */
+        { 1u << 0,  96 },  /* BUTTON_A   */
+        { 1u << 1,  97 },  /* BUTTON_B   */
+        { 1u << 2,  99 },  /* BUTTON_X   */
+        { 1u << 3, 100 },  /* BUTTON_Y   */
+        { 1u << 4, 102 },  /* BUTTON_L1  */
+        { 1u << 5, 103 },  /* BUTTON_R1  */
+        { 1u << 8, 109 },  /* SELECT     */
+        { 1u << 9, 108 },  /* START      */
+    };
+
+    static uint32_t prev_mask = 0;
+    for (unsigned i = 0; i < sizeof(mapping)/sizeof(mapping[0]); i++) {
+        bool was = (prev_mask & mapping[i].mask) != 0;
+        bool now = (button_mask & mapping[i].mask) != 0;
+        if (now && !was) android_emulator_key(emu, 0, mapping[i].keycode); /* key down */
+        if (!now && was) android_emulator_key(emu, 1, mapping[i].keycode); /* key up   */
+    }
+    prev_mask = button_mask;
+
+    /* Translate left stick into virtual D-pad if no dedicated handler */
+    const int16_t DEADZONE = 8000;
+    bool stick_up    = left_y < -DEADZONE;
+    bool stick_down  = left_y >  DEADZONE;
+    bool stick_left  = left_x < -DEADZONE;
+    bool stick_right = left_x >  DEADZONE;
+
+    static bool prev_stick_up = false, prev_stick_down = false;
+    static bool prev_stick_left = false, prev_stick_right = false;
+
+    if (stick_up    && !prev_stick_up)    android_emulator_key(emu, 0, 19);
+    if (!stick_up   && prev_stick_up)     android_emulator_key(emu, 1, 19);
+    if (stick_down  && !prev_stick_down)  android_emulator_key(emu, 0, 20);
+    if (!stick_down && prev_stick_down)   android_emulator_key(emu, 1, 20);
+    if (stick_left  && !prev_stick_left)  android_emulator_key(emu, 0, 21);
+    if (!stick_left && prev_stick_left)   android_emulator_key(emu, 1, 21);
+    if (stick_right && !prev_stick_right) android_emulator_key(emu, 0, 22);
+    if (!stick_right&& prev_stick_right)  android_emulator_key(emu, 1, 22);
+
+    prev_stick_up = stick_up;     prev_stick_down  = stick_down;
+    prev_stick_left = stick_left; prev_stick_right = stick_right;
+
+    /* Suppress unused-parameter warnings for axes not yet consumed */
+    (void)right_x; (void)right_y; (void)left_trigger; (void)right_trigger;
+}
+
 /* -------------------------------------------------------------------------
  * android_emulator_destroy
  * ---------------------------------------------------------------------- */

@@ -124,6 +124,46 @@ void android_emulator_touch(AndroidEmulator *emu, int action, int x, int y, int 
 void android_emulator_key(AndroidEmulator *emu, int action, int keycode);
 
 /**
+ * Send a gamepad/controller event to the emulated application.
+ * Maps Xbox/SDL gamepad buttons and axes to Android KEYCODE_BUTTON_* and
+ * AXIS_* events for native apps that use the gamepad InputDevice API.
+ *
+ * @param button_mask  Bitmask of currently-pressed buttons (see AndroidGamepadButton enum)
+ * @param left_x       Left stick X axis  (-32768 .. +32767)
+ * @param left_y       Left stick Y axis  (-32768 .. +32767)
+ * @param right_x      Right stick X axis (-32768 .. +32767)
+ * @param right_y      Right stick Y axis (-32768 .. +32767)
+ * @param left_trigger  Left trigger  (0 .. 32767)
+ * @param right_trigger Right trigger (0 .. 32767)
+ */
+void android_emulator_gamepad(AndroidEmulator *emu,
+                              uint32_t button_mask,
+                              int16_t left_x,  int16_t left_y,
+                              int16_t right_x, int16_t right_y,
+                              int16_t left_trigger, int16_t right_trigger);
+
+/* Android gamepad button bitmask values (matching KEYCODE_BUTTON_* layout) */
+enum AndroidGamepadButton {
+    AGAMEPAD_A             = (1 << 0),
+    AGAMEPAD_B             = (1 << 1),
+    AGAMEPAD_X             = (1 << 2),
+    AGAMEPAD_Y             = (1 << 3),
+    AGAMEPAD_L1            = (1 << 4),
+    AGAMEPAD_R1            = (1 << 5),
+    AGAMEPAD_L2            = (1 << 6),  /* left trigger as button  */
+    AGAMEPAD_R2            = (1 << 7),  /* right trigger as button */
+    AGAMEPAD_SELECT        = (1 << 8),  /* Xbox: View / Back       */
+    AGAMEPAD_START         = (1 << 9),  /* Xbox: Menu              */
+    AGAMEPAD_L3            = (1 << 10), /* left stick click        */
+    AGAMEPAD_R3            = (1 << 11), /* right stick click       */
+    AGAMEPAD_DPAD_UP       = (1 << 12),
+    AGAMEPAD_DPAD_DOWN     = (1 << 13),
+    AGAMEPAD_DPAD_LEFT     = (1 << 14),
+    AGAMEPAD_DPAD_RIGHT    = (1 << 15),
+    AGAMEPAD_GUIDE         = (1 << 16), /* Xbox: Guide / Nexus     */
+};
+
+/**
  * Clean up and free all resources.
  */
 void android_emulator_destroy(AndroidEmulator *emu);

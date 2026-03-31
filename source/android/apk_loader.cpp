@@ -2,13 +2,13 @@
  * Boxedwine Android - APK Loader Implementation
  *
  * Reads an Android APK (ZIP archive) and extracts:
- *   - Native shared libraries (lib/armeabi-v7a/*.so or lib/armeabi/*.so)
+ *   - Native shared libraries (lib/armeabi-v7a/(name).so or lib/armeabi/(name).so)
  *   - AndroidManifest.xml (binary XML)
  *   - Assets on demand
  *
  * Uses the minizip library already present in lib/zlib/contrib/minizip/.
  *
- * Based on apkenv by Thomas Perl <m@thp.io> (referenceCode/apkenv)
+ * Based on apkenv by Thomas Perl (referenceCode/apkenv)
  */
 
 #include "apk_loader.h"

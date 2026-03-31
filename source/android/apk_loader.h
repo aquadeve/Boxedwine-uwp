@@ -5,7 +5,7 @@
  * containing:
  *   - AndroidManifest.xml
  *   - classes.dex (Dalvik bytecode, not used for native-only apps)
- *   - lib/<abi>/*.so   (native shared libraries)
+ *   - lib/(abi)/(name).so   (native shared libraries)
  *   - assets/          (raw asset files)
  *   - res/             (compiled resources)
  *

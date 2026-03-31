@@ -1,15 +1,21 @@
 /*
- * Boxedwine Android Emulator - UWP Entry Point
+ * Boxedwine Android Emulator - UWP / Xbox One Entry Point
  *
  * Universal Windows Platform entry point for the Android APK emulator.
  * Integrates the ARMv7 CPU interpreter, Android ELF linker, JNI stubs,
- * and Linux syscall layer to run Android native apps on UWP devices.
+ * and Linux syscall layer to run Android native apps on UWP devices
+ * including Xbox One and Xbox Series X|S.
  *
  * Architecture:
  *   APK file -> apk_loader -> android_linker (ELF/ARMv7)
  *                          -> android_jni (JNI stubs)
  *                          -> armv7_interpreter (CPU)
  *                          -> android_syscall (Linux syscalls)
+ *
+ * Xbox One notes:
+ *   - Primary input is gamepad (no mouse/keyboard by default)
+ *   - SDL_GameController API handles Xbox controller mapping
+ *   - Left stick → virtual D-pad / pointer, A button → touch
  *
  * Reference code:
  *   referenceCode/apkenv/    (Thomas Perl's apkenv)
@@ -32,6 +38,30 @@
 // Capture the UI-thread dispatcher so that libuwp can later dispatch file-picker
 // dialogs back to the correct thread from the SDL game thread.
 extern "C" __declspec(dllimport) void uwp_CaptureUIDispatcher();
+
+// -------------------------------------------------------------------------
+// Helper: build a gamepad button bitmask from an SDL_GameController
+// -------------------------------------------------------------------------
+static uint32_t poll_gamepad_buttons(SDL_GameController *gc)
+{
+    uint32_t mask = 0;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_A))           mask |= AGAMEPAD_A;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_B))           mask |= AGAMEPAD_B;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_X))           mask |= AGAMEPAD_X;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_Y))           mask |= AGAMEPAD_Y;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_LEFTSHOULDER))  mask |= AGAMEPAD_L1;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) mask |= AGAMEPAD_R1;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_BACK))        mask |= AGAMEPAD_SELECT;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_START))       mask |= AGAMEPAD_START;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_LEFTSTICK))   mask |= AGAMEPAD_L3;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_RIGHTSTICK))  mask |= AGAMEPAD_R3;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_UP))     mask |= AGAMEPAD_DPAD_UP;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_DOWN))   mask |= AGAMEPAD_DPAD_DOWN;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_LEFT))   mask |= AGAMEPAD_DPAD_LEFT;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_RIGHT))  mask |= AGAMEPAD_DPAD_RIGHT;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_GUIDE))       mask |= AGAMEPAD_GUIDE;
+    return mask;
+}
 
 // -------------------------------------------------------------------------
 // SDL_main - called by SDL after it has set up the WinRT environment.
@@ -88,8 +118,17 @@ extern "C" int SDL_main(int argc, char *argv[])
         SDL_Log("Screen: %dx%d", config.screen_width, config.screen_height);
     }
 
-    // Initialise SDL for display and input
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS) < 0) {
+    // -------------------------------------------------------------------------
+    // Xbox One / UWP hints: set before SDL_Init for correct behaviour
+    // -------------------------------------------------------------------------
+    // Enable Xbox controller support via HID API
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX_ONE, "1");
+    // Ensure the virtual cursor is visible (useful on Xbox when no mouse)
+    SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
+
+    // Initialise SDL for display, input, and game controllers
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) < 0) {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
         return 1;
     }
@@ -114,6 +153,23 @@ extern "C" int SDL_main(int argc, char *argv[])
         return 1;
     }
 
+    // -------------------------------------------------------------------------
+    // Open any game controllers already connected (Xbox One controller, etc.)
+    // -------------------------------------------------------------------------
+    SDL_GameController *gamepad = nullptr;
+    for (int i = 0; i < SDL_NumJoysticks(); i++) {
+        if (SDL_IsGameController(i)) {
+            gamepad = SDL_GameControllerOpen(i);
+            if (gamepad) {
+                SDL_Log("Gamepad connected: %s", SDL_GameControllerName(gamepad));
+                break; // Use the first recognised controller
+            }
+        }
+    }
+    // Virtual cursor position for gamepad pointer emulation (Xbox One)
+    float virtual_cursor_x = config.screen_width  / 2.0f;
+    float virtual_cursor_y = config.screen_height / 2.0f;
+
     // Initialise the Android emulator
     AndroidEmulator emu = {};
     if (!android_emulator_init(&emu, &config)) {
@@ -136,6 +192,8 @@ extern "C" int SDL_main(int argc, char *argv[])
     // -------------------------------------------------------------------------
     bool quit = false;
     const unsigned CPU_STEPS_PER_FRAME = 1000000; // ~1M instructions per frame
+    const float CURSOR_SPEED = 10.0f;
+    const int16_t STICK_DEADZONE = 8000;
 
     while (!quit && emu.cpu.running) {
         // Process host OS events
@@ -146,6 +204,7 @@ extern "C" int SDL_main(int argc, char *argv[])
                     quit = true;
                     break;
 
+                // --- Mouse input (PC / desktop UWP) ---
                 case SDL_MOUSEBUTTONDOWN:
                 case SDL_MOUSEBUTTONUP:
                     android_emulator_touch(&emu,
@@ -153,6 +212,7 @@ extern "C" int SDL_main(int argc, char *argv[])
                         event.button.x, event.button.y, 0);
                     break;
 
+                // --- Touch input (Surface, tablets) ---
                 case SDL_FINGERDOWN:
                 case SDL_FINGERUP:
                 case SDL_FINGERMOTION: {
@@ -165,6 +225,7 @@ extern "C" int SDL_main(int argc, char *argv[])
                     break;
                 }
 
+                // --- Keyboard input ---
                 case SDL_KEYDOWN:
                 case SDL_KEYUP:
                     android_emulator_key(&emu,
@@ -172,6 +233,24 @@ extern "C" int SDL_main(int argc, char *argv[])
                         event.key.keysym.sym);
                     break;
 
+                // --- Gamepad hot-plug (Xbox One controllers) ---
+                case SDL_CONTROLLERDEVICEADDED:
+                    if (!gamepad) {
+                        gamepad = SDL_GameControllerOpen(event.cdevice.which);
+                        if (gamepad && config.verbosity >= 1)
+                            SDL_Log("Gamepad connected: %s", SDL_GameControllerName(gamepad));
+                    }
+                    break;
+                case SDL_CONTROLLERDEVICEREMOVED:
+                    if (gamepad && event.cdevice.which == SDL_JoystickInstanceID(
+                            SDL_GameControllerGetJoystick(gamepad))) {
+                        SDL_Log("Gamepad disconnected");
+                        SDL_GameControllerClose(gamepad);
+                        gamepad = nullptr;
+                    }
+                    break;
+
+                // --- Window resize ---
                 case SDL_WINDOWEVENT:
                     if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                         config.screen_width  = event.window.data1;
@@ -181,15 +260,61 @@ extern "C" int SDL_main(int argc, char *argv[])
             }
         }
 
+        // -------------------------------------------------------------------------
+        // Gamepad polling — Xbox One is the primary input on console
+        // -------------------------------------------------------------------------
+        if (gamepad) {
+            uint32_t buttons = poll_gamepad_buttons(gamepad);
+            int16_t lx = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_LEFTY);
+            int16_t rx = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_RIGHTX);
+            int16_t ry = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_RIGHTY);
+            int16_t lt = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+            int16_t rt = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+
+            // Send structured gamepad event
+            android_emulator_gamepad(&emu, buttons, lx, ly, rx, ry, lt, rt);
+
+            // ---- Virtual cursor via right stick (for touch emulation on Xbox) ----
+            if (rx > STICK_DEADZONE || rx < -STICK_DEADZONE)
+                virtual_cursor_x += (float)rx / 32767.0f * CURSOR_SPEED;
+            if (ry > STICK_DEADZONE || ry < -STICK_DEADZONE)
+                virtual_cursor_y += (float)ry / 32767.0f * CURSOR_SPEED;
+
+            // Clamp cursor to screen
+            if (virtual_cursor_x < 0) virtual_cursor_x = 0;
+            if (virtual_cursor_y < 0) virtual_cursor_y = 0;
+            if (virtual_cursor_x >= config.screen_width)  virtual_cursor_x = (float)(config.screen_width - 1);
+            if (virtual_cursor_y >= config.screen_height) virtual_cursor_y = (float)(config.screen_height - 1);
+
+            // A button = touch press at virtual cursor position
+            static bool a_was_pressed = false;
+            bool a_pressed = (buttons & AGAMEPAD_A) != 0;
+            if (a_pressed && !a_was_pressed)
+                android_emulator_touch(&emu, 0, (int)virtual_cursor_x, (int)virtual_cursor_y, 0);
+            if (!a_pressed && a_was_pressed)
+                android_emulator_touch(&emu, 1, (int)virtual_cursor_x, (int)virtual_cursor_y, 0);
+            a_was_pressed = a_pressed;
+        }
+
         // Execute emulated CPU instructions for this frame
         if (emu.cpu.running) {
             android_emulator_step(&emu, CPU_STEPS_PER_FRAME);
         }
 
-        // Render a placeholder frame (the framebuffer would normally be
-        // mapped from emulated memory; here we just present a clear frame)
+        // Render: present emulated framebuffer (placeholder: clear to dark grey)
         SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
         SDL_RenderClear(renderer);
+
+        // Draw virtual cursor crosshair when gamepad is active (for Xbox)
+        if (gamepad) {
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 180);
+            SDL_Rect h = { (int)virtual_cursor_x - 8, (int)virtual_cursor_y, 16, 1 };
+            SDL_Rect v = { (int)virtual_cursor_x, (int)virtual_cursor_y - 8, 1, 16 };
+            SDL_RenderFillRect(renderer, &h);
+            SDL_RenderFillRect(renderer, &v);
+        }
+
         SDL_RenderPresent(renderer);
     }
 
@@ -198,13 +323,14 @@ extern "C" int SDL_main(int argc, char *argv[])
 
     int exit_code = emu.exit_code;
     android_emulator_destroy(&emu);
+    if (gamepad) SDL_GameControllerClose(gamepad);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return exit_code;
 }
 
-// Entry point into UWP app
+// Entry point into UWP / Xbox One app
 int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR argv, int argc)
 {
     // Capture the UI-thread CoreWindow dispatcher before SDL moves execution to a
