@@ -20,6 +20,7 @@ lib/sdl2/VisualC/SDLmain/Win32/
 lib/sdl2/VisualC/SDLmain/x64/
 project/msvc/BoxedWine/BoxedWine/imgui.ini
 project/linux/bin/
+project/linux/Build/
 project/linux/linux_build/
 project/mac-xcode/bin/
 **/imgui.ini
