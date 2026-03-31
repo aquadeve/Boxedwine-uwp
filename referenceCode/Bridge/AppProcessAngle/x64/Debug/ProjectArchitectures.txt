@@ -1,0 +1,6 @@
+C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\AppProcessAngle.vcxproj;x64
+C:\Users\KantzJr\Documents\GitHub\Bridge\BridgeLib\BridgeLib.vcxproj;x64
+C:\Users\KantzJr\Documents\GitHub\Bridge\BridgeLib\BridgeLib.vcxproj;x64
+C:\Users\KantzJr\Documents\GitHub\Bridge\FLinux\FLinux.vcxproj;x64
+C:\Users\KantzJr\Documents\GitHub\Bridge\FLinux\FLinux.vcxproj;x64
+C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\ProcessHost.vcxproj;x64

@@ -1,0 +1,5 @@
+﻿  pch.cpp
+  App.cpp
+  SimpleRenderer.cpp
+  WinDebugMonitor.cpp
+LINK : fatal error LNK1181: cannot open input file '..\Angle\\winrt\10\src\Release_Win32\lib\libGLESv2.lib'

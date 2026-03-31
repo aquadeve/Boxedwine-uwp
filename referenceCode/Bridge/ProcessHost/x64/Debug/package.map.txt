@@ -1,0 +1,11 @@
+[Files]
+"C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\x64\Debug\ProcessHost\AppxManifest.xml" "AppxManifest.xml"
+"C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\x64\Debug\ProcessHost\ProcessHost.exe" "ProcessHost.exe"
+"C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\Assets\SplashScreen.png" "Assets\SplashScreen.png"
+"C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\Assets\Square150x150Logo.png" "Assets\Square150x150Logo.png"
+"C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\Assets\Square44x44Logo.png" "Assets\Square44x44Logo.png"
+"C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\Assets\StoreLogo.png" "Assets\StoreLogo.png"
+"C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\Assets\Wide310x150Logo.png" "Assets\Wide310x150Logo.png"
+"C:\Users\KantzJr\Documents\GitHub\Bridge\BridgeLib\x64\Debug\BridgeLib\Bridge.dll" "Bridge.dll"
+"C:\Program Files (x86)\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.UniversalCRT.Debug\10.0.19041.0\\redist\Debug\X64\ucrtbased.dll" "ucrtbased.dll"
+"C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\x64\Debug\ProcessHost\resources.pri" "resources.pri"

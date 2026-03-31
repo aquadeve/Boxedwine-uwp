@@ -1,0 +1,5 @@
+﻿  pch.cpp
+  ProcessHost.cpp
+c:\users\kantzjr\documents\github\bridge\flinux\src\ntdll.h(123): warning C4200: nonstandard extension used: zero-sized array in struct/union
+  c:\users\kantzjr\documents\github\bridge\flinux\src\ntdll.h(123): note: This member will be ignored by a defaulted constructor or copy/move assignment operator
+LINK : fatal error LNK1181: cannot open input file 'C:\Users\KantzJr\Documents\GitHub\Bridge\Release\BridgeLib\Bridge.lib'

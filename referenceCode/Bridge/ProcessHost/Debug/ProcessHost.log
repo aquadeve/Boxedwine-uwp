@@ -1,0 +1,2 @@
+﻿  ProcessHost.vcxproj -> C:\Users\KantzJr\Documents\GitHub\Bridge\Debug\ProcessHost\ProcessHost.exe
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\AppxPackage\Microsoft.AppXPackage.Targets(2839,5): warning APPX0108: The certificate specified has expired. For more information about renewing certificates, see http://go.microsoft.com/fwlink/?LinkID=241478.

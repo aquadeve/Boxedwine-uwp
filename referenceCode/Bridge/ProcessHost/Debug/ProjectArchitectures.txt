@@ -1,0 +1,3 @@
+C:\Users\KantzJr\Documents\GitHub\Bridge\BridgeLib\BridgeLib.vcxproj;x86
+C:\Users\KantzJr\Documents\GitHub\Bridge\FLinux\FLinux.vcxproj;x86
+C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\ProcessHost.vcxproj;x86

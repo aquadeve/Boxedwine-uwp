@@ -1,0 +1,1094 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Machine>DESKTOP-0O0O9CN</Machine>
+    <WindowsUser>KantzJr</WindowsUser>
+    <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
+    <TargetOsVersion>10.0</TargetOsVersion>
+    <TargetOsDescription>Windows 10.0</TargetOsDescription>
+    <SolutionConfiguration>Release|x64</SolutionConfiguration>
+    <PackageArchitecture>x64</PackageArchitecture>
+    <PackageIdentityName>fb4715f7-7e0d-42c0-85af-da91b108aec1</PackageIdentityName>
+    <PackageIdentityPublisher>CN=Václav</PackageIdentityPublisher>
+    <IntermediateOutputPath>C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\x64\Release\</IntermediateOutputPath>
+    <RemoteDeploymentType>CopyToDevice</RemoteDeploymentType>
+    <PackageRegistrationPath></PackageRegistrationPath>
+    <RemoveNonLayoutFiles>false</RemoveNonLayoutFiles>
+    <DeployOptionalPackages>false</DeployOptionalPackages>
+    <WindowsSdkPath>C:\Program Files %28x86%29\Windows Kits\10\</WindowsSdkPath>
+    <LayoutDir>C:\Users\KantzJr\Documents\GitHub\Bridge\x64\Release\AppProcessAngle\AppX</LayoutDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <AppXManifest Include="C:\Users\KantzJr\Documents\GitHub\Bridge\x64\Release\AppProcessAngle\AppxManifest.xml">
+      <PackagePath>AppxManifest.xml</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppXManifest>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\x64\Release\AppProcessAngle\AppProcess.exe">
+      <PackagePath>AppProcess.exe</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\x64\Release\ProcessHost\ProcessHost.exe">
+      <PackagePath>ProcessHost.exe</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\x64\Release\AppProcessAngle\AppProcessAngle.winmd">
+      <PackagePath>AppProcessAngle.winmd</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\etc\fonts.xml">
+      <PackagePath>root\system\etc\fonts.xml</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\etc\public.libraries.txt">
+      <PackagePath>root\system\etc\public.libraries.txt</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\AndroidClock.ttf">
+      <PackagePath>root\system\fonts\AndroidClock.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\CarroisGothicSC-Regular.ttf">
+      <PackagePath>root\system\fonts\CarroisGothicSC-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\ComingSoon.ttf">
+      <PackagePath>root\system\fonts\ComingSoon.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\CutiveMono.ttf">
+      <PackagePath>root\system\fonts\CutiveMono.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\DancingScript-Bold.ttf">
+      <PackagePath>root\system\fonts\DancingScript-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\DancingScript-Regular.ttf">
+      <PackagePath>root\system\fonts\DancingScript-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\DroidSansMono.ttf">
+      <PackagePath>root\system\fonts\DroidSansMono.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoColorEmoji.ttf">
+      <PackagePath>root\system\fonts\NotoColorEmoji.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoNaskhArabic-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoNaskhArabic-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoNaskhArabic-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoNaskhArabic-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoNaskhArabicUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoNaskhArabicUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoNaskhArabicUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoNaskhArabicUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansArmenian-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansArmenian-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansArmenian-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansArmenian-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansBalinese-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansBalinese-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansBamum-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansBamum-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansBatak-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansBatak-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansBengali-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansBengali-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansBengali-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansBengali-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansBengaliUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansBengaliUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansBengaliUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansBengaliUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansBuginese-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansBuginese-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansBuhid-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansBuhid-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansCanadianAboriginal-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansCanadianAboriginal-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansCham-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansCham-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansCham-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansCham-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansCherokee-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansCherokee-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansCoptic-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansCoptic-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansDevanagari-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansDevanagari-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansDevanagari-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansDevanagari-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansDevanagariUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansDevanagariUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansDevanagariUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansDevanagariUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansEthiopic-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansEthiopic-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansEthiopic-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansEthiopic-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGeorgian-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansGeorgian-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGeorgian-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansGeorgian-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGlagolitic-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansGlagolitic-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGujarati-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansGujarati-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGujarati-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansGujarati-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGujaratiUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansGujaratiUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGujaratiUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansGujaratiUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGurmukhi-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansGurmukhi-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGurmukhi-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansGurmukhi-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGurmukhiUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansGurmukhiUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansGurmukhiUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansGurmukhiUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansHanunoo-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansHanunoo-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansHebrew-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansHebrew-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansHebrew-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansHebrew-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansJavanese-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansJavanese-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansKannada-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansKannada-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansKannada-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansKannada-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansKannadaUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansKannadaUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansKannadaUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansKannadaUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansKayahLi-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansKayahLi-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansKhmer-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansKhmer-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansKhmer-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansKhmer-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansKhmerUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansKhmerUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansKhmerUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansKhmerUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansLao-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansLao-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansLao-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansLao-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansLaoUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansLaoUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansLaoUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansLaoUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansLepcha-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansLepcha-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansLimbu-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansLimbu-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansLisu-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansLisu-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMalayalam-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansMalayalam-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMalayalam-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansMalayalam-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMalayalamUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansMalayalamUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMalayalamUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansMalayalamUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMandaic-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansMandaic-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMeeteiMayek-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansMeeteiMayek-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMongolian-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansMongolian-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMyanmar-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansMyanmar-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMyanmar-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansMyanmar-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMyanmarUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansMyanmarUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansMyanmarUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansMyanmarUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansNewTaiLue-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansNewTaiLue-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansNKo-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansNKo-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansOlChiki-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansOlChiki-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansOriya-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansOriya-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansOriya-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansOriya-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansOriyaUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansOriyaUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansOriyaUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansOriyaUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansRejang-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansRejang-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansSaurashtra-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansSaurashtra-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansSinhala-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansSinhala-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansSinhala-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansSinhala-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansSundanese-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansSundanese-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansSylotiNagri-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansSylotiNagri-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansSymbols-Regular-Subsetted.ttf">
+      <PackagePath>root\system\fonts\NotoSansSymbols-Regular-Subsetted.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansSymbols-Regular-Subsetted2.ttf">
+      <PackagePath>root\system\fonts\NotoSansSymbols-Regular-Subsetted2.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansSyriacEstrangela-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansSyriacEstrangela-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTagbanwa-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansTagbanwa-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTaiLe-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansTaiLe-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTaiTham-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansTaiTham-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTaiViet-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansTaiViet-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTamil-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansTamil-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTamil-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansTamil-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTamilUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansTamilUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTamilUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansTamilUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTelugu-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansTelugu-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTelugu-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansTelugu-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTeluguUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansTeluguUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTeluguUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansTeluguUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansThaana-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansThaana-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansThaana-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansThaana-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansThai-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansThai-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansThai-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansThai-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansThaiUI-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansThaiUI-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansThaiUI-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansThaiUI-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTibetan-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSansTibetan-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTibetan-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansTibetan-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansTifinagh-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansTifinagh-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansVai-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansVai-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansYi-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSansYi-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSerif-Bold.ttf">
+      <PackagePath>root\system\fonts\NotoSerif-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSerif-BoldItalic.ttf">
+      <PackagePath>root\system\fonts\NotoSerif-BoldItalic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSerif-Italic.ttf">
+      <PackagePath>root\system\fonts\NotoSerif-Italic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSerif-Regular.ttf">
+      <PackagePath>root\system\fonts\NotoSerif-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-Black.ttf">
+      <PackagePath>root\system\fonts\Roboto-Black.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-BlackItalic.ttf">
+      <PackagePath>root\system\fonts\Roboto-BlackItalic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-Bold.ttf">
+      <PackagePath>root\system\fonts\Roboto-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-BoldItalic.ttf">
+      <PackagePath>root\system\fonts\Roboto-BoldItalic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-Italic.ttf">
+      <PackagePath>root\system\fonts\Roboto-Italic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-Light.ttf">
+      <PackagePath>root\system\fonts\Roboto-Light.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-LightItalic.ttf">
+      <PackagePath>root\system\fonts\Roboto-LightItalic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-Medium.ttf">
+      <PackagePath>root\system\fonts\Roboto-Medium.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-MediumItalic.ttf">
+      <PackagePath>root\system\fonts\Roboto-MediumItalic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-Regular.ttf">
+      <PackagePath>root\system\fonts\Roboto-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-Thin.ttf">
+      <PackagePath>root\system\fonts\Roboto-Thin.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\Roboto-ThinItalic.ttf">
+      <PackagePath>root\system\fonts\Roboto-ThinItalic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\RobotoCondensed-Bold.ttf">
+      <PackagePath>root\system\fonts\RobotoCondensed-Bold.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\RobotoCondensed-BoldItalic.ttf">
+      <PackagePath>root\system\fonts\RobotoCondensed-BoldItalic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\RobotoCondensed-Italic.ttf">
+      <PackagePath>root\system\fonts\RobotoCondensed-Italic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\RobotoCondensed-Light.ttf">
+      <PackagePath>root\system\fonts\RobotoCondensed-Light.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\RobotoCondensed-LightItalic.ttf">
+      <PackagePath>root\system\fonts\RobotoCondensed-LightItalic.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\RobotoCondensed-Regular.ttf">
+      <PackagePath>root\system\fonts\RobotoCondensed-Regular.ttf</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\Assets\LockScreenLogo.scale-200.png">
+      <PackagePath>Assets\LockScreenLogo.scale-200.png</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\Assets\SplashScreen.scale-200.png">
+      <PackagePath>Assets\SplashScreen.scale-200.png</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\Assets\Square150x150Logo.scale-200.png">
+      <PackagePath>Assets\Square150x150Logo.scale-200.png</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\Assets\Square44x44Logo.scale-200.png">
+      <PackagePath>Assets\Square44x44Logo.scale-200.png</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <PackagePath>Assets\Square44x44Logo.targetsize-24_altform-unplated.png</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\Assets\StoreLogo.png">
+      <PackagePath>Assets\StoreLogo.png</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\Assets\Wide310x150Logo.scale-200.png">
+      <PackagePath>Assets\Wide310x150Logo.scale-200.png</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\Assets\SplashScreen.png">
+      <PackagePath>Assets\SplashScreen.png</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\Assets\Square150x150Logo.png">
+      <PackagePath>Assets\Square150x150Logo.png</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\Assets\Square44x44Logo.png">
+      <PackagePath>Assets\Square44x44Logo.png</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\ProcessHost\Assets\Wide310x150Logo.png">
+      <PackagePath>Assets\Wide310x150Logo.png</PackagePath>
+      <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\app_process64.dll">
+      <PackagePath>app_process64.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\dex2oat.dll">
+      <PackagePath>dex2oat.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libandroid.dll">
+      <PackagePath>libandroid.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libandroidfw.dll">
+      <PackagePath>libandroidfw.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libandroid_runtime.dll">
+      <PackagePath>libandroid_runtime.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libart-compiler.dll">
+      <PackagePath>libart-compiler.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libart.dll">
+      <PackagePath>libart.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libaudioutils.dll">
+      <PackagePath>libaudioutils.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libbacktrace.dll">
+      <PackagePath>libbacktrace.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libbase.dll">
+      <PackagePath>libbase.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libbcinfo.dll">
+      <PackagePath>libbcinfo.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libbinary_parse.dll">
+      <PackagePath>libbinary_parse.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libbinder.dll">
+      <PackagePath>libbinder.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libc++.dll">
+      <PackagePath>libc++.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libc.dll">
+      <PackagePath>libc.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libcamera_client.dll">
+      <PackagePath>libcamera_client.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libcamera_metadata.dll">
+      <PackagePath>libcamera_metadata.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libcrypto.dll">
+      <PackagePath>libcrypto.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libcutils.dll">
+      <PackagePath>libcutils.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libdng_sdk.dll">
+      <PackagePath>libdng_sdk.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libdrmframework.dll">
+      <PackagePath>libdrmframework.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libexpat.dll">
+      <PackagePath>libexpat.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libft2.dll">
+      <PackagePath>libft2.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libGLESv1_CM.dll">
+      <PackagePath>libGLESv1_CM.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libgui.dll">
+      <PackagePath>libgui.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libhardware.dll">
+      <PackagePath>libhardware.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libhardware_legacy.dll">
+      <PackagePath>libhardware_legacy.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libharfbuzz_ng.dll">
+      <PackagePath>libharfbuzz_ng.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libhwui.dll">
+      <PackagePath>libhwui.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libicui18n.dll">
+      <PackagePath>libicui18n.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libicuuc.dll">
+      <PackagePath>libicuuc.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libimage_type_recognition.dll">
+      <PackagePath>libimage_type_recognition.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libimg_utils.dll">
+      <PackagePath>libimg_utils.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libinput.dll">
+      <PackagePath>libinput.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libjavacore.dll">
+      <PackagePath>libjavacore.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libjnigraphics.dll">
+      <PackagePath>libjnigraphics.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libjpeg.dll">
+      <PackagePath>libjpeg.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\liblog.dll">
+      <PackagePath>liblog.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\liblz4.dll">
+      <PackagePath>liblz4.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\liblzma.dll">
+      <PackagePath>liblzma.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libm.dll">
+      <PackagePath>libm.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libmedia.dll">
+      <PackagePath>libmedia.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libmediandk.dll">
+      <PackagePath>libmediandk.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libmediautils.dll">
+      <PackagePath>libmediautils.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libmemtrack.dll">
+      <PackagePath>libmemtrack.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libmemunreachable.dll">
+      <PackagePath>libmemunreachable.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libminikin.dll">
+      <PackagePath>libminikin.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libnativebridge.dll">
+      <PackagePath>libnativebridge.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libnativehelper.dll">
+      <PackagePath>libnativehelper.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libnativeloader.dll">
+      <PackagePath>libnativeloader.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libnetd_client.dll">
+      <PackagePath>libnetd_client.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libnetutils.dll">
+      <PackagePath>libnetutils.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libopenjdk.dll">
+      <PackagePath>libopenjdk.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libopenjdkjvm.dll">
+      <PackagePath>libopenjdkjvm.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libpackagelistparser.dll">
+      <PackagePath>libpackagelistparser.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libpcre.dll">
+      <PackagePath>libpcre.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libpdfium.dll">
+      <PackagePath>libpdfium.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libpiex.dll">
+      <PackagePath>libpiex.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libpng.dll">
+      <PackagePath>libpng.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libpowermanager.dll">
+      <PackagePath>libpowermanager.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libprotobuf-cpp-lite.dll">
+      <PackagePath>libprotobuf-cpp-lite.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libradio.dll">
+      <PackagePath>libradio.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libradio_metadata.dll">
+      <PackagePath>libradio_metadata.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libselinux.dll">
+      <PackagePath>libselinux.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libskia.dll">
+      <PackagePath>libskia.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libsonivox.dll">
+      <PackagePath>libsonivox.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libsoundtrigger.dll">
+      <PackagePath>libsoundtrigger.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libspeexresampler.dll">
+      <PackagePath>libspeexresampler.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libsqlite.dll">
+      <PackagePath>libsqlite.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libstagefright.dll">
+      <PackagePath>libstagefright.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libstagefright_foundation.dll">
+      <PackagePath>libstagefright_foundation.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libstagefright_http_support.dll">
+      <PackagePath>libstagefright_http_support.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libstdc++.dll">
+      <PackagePath>libstdc++.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libsync.dll">
+      <PackagePath>libsync.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libtest_syscalls.dll">
+      <PackagePath>libtest_syscalls.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libtiff_directory.dll">
+      <PackagePath>libtiff_directory.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libui.dll">
+      <PackagePath>libui.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libunwind.dll">
+      <PackagePath>libunwind.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libusbhost.dll">
+      <PackagePath>libusbhost.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libutils.dll">
+      <PackagePath>libutils.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libvixl.dll">
+      <PackagePath>libvixl.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libvulkan.dll">
+      <PackagePath>libvulkan.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libwebviewchromium_plat_support.dll">
+      <PackagePath>libwebviewchromium_plat_support.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libwilhelm.dll">
+      <PackagePath>libwilhelm.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libz.dll">
+      <PackagePath>libz.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\linker.dll">
+      <PackagePath>linker.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libLLVM.dll">
+      <PackagePath>libLLVM.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libOpenMAXAL.dll">
+      <PackagePath>libOpenMAXAL.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libOpenSLES.dll">
+      <PackagePath>libOpenSLES.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libRS.dll">
+      <PackagePath>libRS.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libRS_internal.dll">
+      <PackagePath>libRS_internal.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\libRScpp.dll">
+      <PackagePath>libRScpp.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\android\lib\x64\patchoat.dll">
+      <PackagePath>patchoat.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\Angle\winrt\10\src\Release_x64\libEGL.dll">
+      <PackagePath>libEGL.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\Angle\winrt\10\src\Release_x64\libGLESv2.dll">
+      <PackagePath>libGLESv2.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\property_contexts">
+      <PackagePath>root\property_contexts</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\etc\compiled-classes">
+      <PackagePath>root\system\etc\compiled-classes</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\etc\event-log-tags">
+      <PackagePath>root\system\etc\event-log-tags</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\etc\preloaded-classes">
+      <PackagePath>root\system\etc\preloaded-classes</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\usr\share\zoneinfo\tzdata">
+      <PackagePath>root\system\usr\share\zoneinfo\tzdata</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\app\EasterEgg\EasterEgg.apk">
+      <PackagePath>root\system\app\EasterEgg\EasterEgg.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\framework-res.apk">
+      <PackagePath>root\system\framework\framework-res.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\BackupRestoreConfirmation\BackupRestoreConfirmation.apk">
+      <PackagePath>root\system\priv-app\BackupRestoreConfirmation\BackupRestoreConfirmation.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\BlockedNumberProvider\BlockedNumberProvider.apk">
+      <PackagePath>root\system\priv-app\BlockedNumberProvider\BlockedNumberProvider.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\CalendarProvider\CalendarProvider.apk">
+      <PackagePath>root\system\priv-app\CalendarProvider\CalendarProvider.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\ContactsProvider\ContactsProvider.apk">
+      <PackagePath>root\system\priv-app\ContactsProvider\ContactsProvider.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\Contacts\Contacts.apk">
+      <PackagePath>root\system\priv-app\Contacts\Contacts.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\CtsShimPrivPrebuilt\CtsShimPrivPrebuilt.apk">
+      <PackagePath>root\system\priv-app\CtsShimPrivPrebuilt\CtsShimPrivPrebuilt.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\DefaultContainerService\DefaultContainerService.apk">
+      <PackagePath>root\system\priv-app\DefaultContainerService\DefaultContainerService.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\DownloadProvider\DownloadProvider.apk">
+      <PackagePath>root\system\priv-app\DownloadProvider\DownloadProvider.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\InputDevices\InputDevices.apk">
+      <PackagePath>root\system\priv-app\InputDevices\InputDevices.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\Launcher2\Launcher2.apk">
+      <PackagePath>root\system\priv-app\Launcher2\Launcher2.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\PackageInstaller\PackageInstaller.apk">
+      <PackagePath>root\system\priv-app\PackageInstaller\PackageInstaller.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\SettingsProvider\SettingsProvider.apk">
+      <PackagePath>root\system\priv-app\SettingsProvider\SettingsProvider.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\Settings\Settings.apk">
+      <PackagePath>root\system\priv-app\Settings\Settings.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\Shell\Shell.apk">
+      <PackagePath>root\system\priv-app\Shell\Shell.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\StorageManager\StorageManager.apk">
+      <PackagePath>root\system\priv-app\StorageManager\StorageManager.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\priv-app\SystemUI\SystemUI.apk">
+      <PackagePath>root\system\priv-app\SystemUI\SystemUI.apk</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\build.prop">
+      <PackagePath>root\system\build.prop</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\fonts\NotoSansCJK-Regular.ttc">
+      <PackagePath>root\system\fonts\NotoSansCJK-Regular.ttc</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\am.jar">
+      <PackagePath>root\system\framework\am.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\android.test.runner.jar">
+      <PackagePath>root\system\framework\android.test.runner.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\apache-xml.jar">
+      <PackagePath>root\system\framework\apache-xml.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\appwidget.jar">
+      <PackagePath>root\system\framework\appwidget.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\bmgr.jar">
+      <PackagePath>root\system\framework\bmgr.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\bouncycastle.jar">
+      <PackagePath>root\system\framework\bouncycastle.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\bu.jar">
+      <PackagePath>root\system\framework\bu.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\com.android.future.usb.accessory.jar">
+      <PackagePath>root\system\framework\com.android.future.usb.accessory.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\com.android.location.provider.jar">
+      <PackagePath>root\system\framework\com.android.location.provider.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\com.android.media.remotedisplay.jar">
+      <PackagePath>root\system\framework\com.android.media.remotedisplay.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\com.android.mediadrm.signer.jar">
+      <PackagePath>root\system\framework\com.android.mediadrm.signer.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\conscrypt.jar">
+      <PackagePath>root\system\framework\conscrypt.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\content.jar">
+      <PackagePath>root\system\framework\content.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\core-junit.jar">
+      <PackagePath>root\system\framework\core-junit.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\core-libart.jar">
+      <PackagePath>root\system\framework\core-libart.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\core-oj.jar">
+      <PackagePath>root\system\framework\core-oj.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\dpm.jar">
+      <PackagePath>root\system\framework\dpm.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\ethernet-service.jar">
+      <PackagePath>root\system\framework\ethernet-service.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\ext.jar">
+      <PackagePath>root\system\framework\ext.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\framework.jar">
+      <PackagePath>root\system\framework\framework.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\hid.jar">
+      <PackagePath>root\system\framework\hid.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\ime.jar">
+      <PackagePath>root\system\framework\ime.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\ims-common.jar">
+      <PackagePath>root\system\framework\ims-common.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\input.jar">
+      <PackagePath>root\system\framework\input.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\javax.obex.jar">
+      <PackagePath>root\system\framework\javax.obex.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\media_cmd.jar">
+      <PackagePath>root\system\framework\media_cmd.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\monkey.jar">
+      <PackagePath>root\system\framework\monkey.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\okhttp.jar">
+      <PackagePath>root\system\framework\okhttp.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\org.apache.http.legacy.boot.jar">
+      <PackagePath>root\system\framework\org.apache.http.legacy.boot.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\pm.jar">
+      <PackagePath>root\system\framework\pm.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\requestsync.jar">
+      <PackagePath>root\system\framework\requestsync.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\services.jar">
+      <PackagePath>root\system\framework\services.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\settings.jar">
+      <PackagePath>root\system\framework\settings.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\sm.jar">
+      <PackagePath>root\system\framework\sm.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\svc.jar">
+      <PackagePath>root\system\framework\svc.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\telecom.jar">
+      <PackagePath>root\system\framework\telecom.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\telephony-common.jar">
+      <PackagePath>root\system\framework\telephony-common.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\uiautomator.jar">
+      <PackagePath>root\system\framework\uiautomator.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\voip-common.jar">
+      <PackagePath>root\system\framework\voip-common.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\wifi-service.jar">
+      <PackagePath>root\system\framework\wifi-service.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\wm.jar">
+      <PackagePath>root\system\framework\wm.jar</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-apache-xml.art">
+      <PackagePath>root\system\framework\arm\boot-apache-xml.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-bouncycastle.art">
+      <PackagePath>root\system\framework\arm\boot-bouncycastle.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-conscrypt.art">
+      <PackagePath>root\system\framework\arm\boot-conscrypt.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-core-junit.art">
+      <PackagePath>root\system\framework\arm\boot-core-junit.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-core-libart.art">
+      <PackagePath>root\system\framework\arm\boot-core-libart.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-ext.art">
+      <PackagePath>root\system\framework\arm\boot-ext.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-framework.art">
+      <PackagePath>root\system\framework\arm\boot-framework.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-ims-common.art">
+      <PackagePath>root\system\framework\arm\boot-ims-common.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-okhttp.art">
+      <PackagePath>root\system\framework\arm\boot-okhttp.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-org.apache.http.legacy.boot.art">
+      <PackagePath>root\system\framework\arm\boot-org.apache.http.legacy.boot.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-telephony-common.art">
+      <PackagePath>root\system\framework\arm\boot-telephony-common.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-voip-common.art">
+      <PackagePath>root\system\framework\arm\boot-voip-common.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot.art">
+      <PackagePath>root\system\framework\arm\boot.art</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-apache-xml.oat">
+      <PackagePath>root\system\framework\arm\boot-apache-xml.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-bouncycastle.oat">
+      <PackagePath>root\system\framework\arm\boot-bouncycastle.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-conscrypt.oat">
+      <PackagePath>root\system\framework\arm\boot-conscrypt.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-core-junit.oat">
+      <PackagePath>root\system\framework\arm\boot-core-junit.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-core-libart.oat">
+      <PackagePath>root\system\framework\arm\boot-core-libart.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-ext.oat">
+      <PackagePath>root\system\framework\arm\boot-ext.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-framework.oat">
+      <PackagePath>root\system\framework\arm\boot-framework.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-ims-common.oat">
+      <PackagePath>root\system\framework\arm\boot-ims-common.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-okhttp.oat">
+      <PackagePath>root\system\framework\arm\boot-okhttp.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-org.apache.http.legacy.boot.oat">
+      <PackagePath>root\system\framework\arm\boot-org.apache.http.legacy.boot.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-telephony-common.oat">
+      <PackagePath>root\system\framework\arm\boot-telephony-common.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot-voip-common.oat">
+      <PackagePath>root\system\framework\arm\boot-voip-common.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\framework\arm\boot.oat">
+      <PackagePath>root\system\framework\arm\boot.oat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\AppProcessAngle\root\system\usr\icu\icudt56l.dat">
+      <PackagePath>root\system\usr\icu\icudt56l.dat</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\x64\Release\BridgeLib\Bridge.dll">
+      <PackagePath>Bridge.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\KantzJr\Documents\GitHub\Bridge\x64\Release\AppProcessAngle\resources.pri">
+      <PackagePath>resources.pri</PackagePath>
+    </AppxPackagedFile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResolvedSDKReference Include="C:\Program Files %28x86%29\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.VCLibs\14.0\">
+      <Name>Microsoft.VCLibs.140.00</Name>
+      <Version>14.0.33519.0</Version>
+      <Architecture>ARM64</Architecture>
+      <FrameworkIdentity>Name = Microsoft.VCLibs.140.00, MinVersion = 14.0.33519.0, Publisher = %27CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US%27</FrameworkIdentity>
+      <AppxLocation>C:\Program Files %28x86%29\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.VCLibs\14.0\.\AppX\Retail\ARM64\Microsoft.VCLibs.ARM64.14.00.appx</AppxLocation>
+      <MoreInfo></MoreInfo>
+    </ResolvedSDKReference>
+    <ResolvedSDKReference Include="C:\Program Files %28x86%29\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.VCLibs\14.0\">
+      <Name>Microsoft.VCLibs.140.00</Name>
+      <Version>14.0.33519.0</Version>
+      <Architecture>x64</Architecture>
+      <FrameworkIdentity>Name = Microsoft.VCLibs.140.00, MinVersion = 14.0.33519.0, Publisher = %27CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US%27</FrameworkIdentity>
+      <AppxLocation>C:\Program Files %28x86%29\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.VCLibs\14.0\.\AppX\Retail\x64\Microsoft.VCLibs.x64.14.00.appx</AppxLocation>
+      <MoreInfo></MoreInfo>
+    </ResolvedSDKReference>
+    <ResolvedSDKReference Include="C:\Program Files %28x86%29\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.VCLibs\14.0\">
+      <Name>Microsoft.VCLibs.140.00</Name>
+      <Version>14.0.33519.0</Version>
+      <Architecture>x86</Architecture>
+      <FrameworkIdentity>Name = Microsoft.VCLibs.140.00, MinVersion = 14.0.33519.0, Publisher = %27CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US%27</FrameworkIdentity>
+      <AppxLocation>C:\Program Files %28x86%29\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.VCLibs\14.0\.\AppX\Retail\x86\Microsoft.VCLibs.x86.14.00.appx</AppxLocation>
+      <MoreInfo></MoreInfo>
+    </ResolvedSDKReference>
+  </ItemGroup>
+</Project>
