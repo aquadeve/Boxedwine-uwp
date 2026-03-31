@@ -38,26 +38,32 @@ You must place them under `project\msvc\BoxedWine\deps\` before building:
 | Path | Source |
 |---|---|
 | `deps\bin\SDL2.dll` | [aerisarn/sdl-uwp-gl](https://github.com/aerisarn/sdl-uwp-gl) – build the **VisualC-WinRT** project for the target platform |
-| `deps\bin\opengl32.dll` | [aerisarn/mesa-uwp](https://github.com/aerisarn/mesa-uwp) – Gallium WGL implementation |
-| `deps\bin\libgallium_wgl.dll` | (same Mesa build as above) |
-| `deps\bin\libglapi.dll` | (same Mesa build as above) |
 | `deps\bin\z-1.dll` | zlib – can be obtained from the zlib project or a MinGW package |
 | `deps\lib\SDL2.lib` | Import library for the SDL2 DLL above |
-| `deps\lib\opengl32.lib` | Import library for the Mesa opengl32 DLL above |
 | `deps\lib\z.lib` | Import library for zlib |
 | `deps\include\SDL2\` | SDL2 headers |
-| `deps\include\glad\` | GLAD OpenGL extension loader headers |
 | `deps\include\KHR\` | Khronos EGL/platform headers |
 | `deps\pointer_arrow.png` | Custom cursor image used by the UWP renderer |
 
-The `dxil.dll` redistributable required by the Mesa Gallium driver is typically found at:
-```
-C:\Program Files (x86)\Windows Kits\10\Redist\D3D\x64\dxil.dll   (x64)
-C:\Program Files (x86)\Windows Kits\10\Redist\D3D\arm64\dxil.dll  (ARM64)
-```
-This is installed automatically with the Windows 10 SDK.  Verify the path matches your
-SDK installation; the `uwp.vcxproj` currently references the x64 path.  Update the
-`<Content Include="...">` entry in `uwp.vcxproj` if your architecture or SDK path differs.
+### ANGLE (D3D11 → OpenGL ES translation)
+
+The rendering pipeline uses [ANGLE](https://chromium.googlesource.com/angle/angle)
+to translate OpenGL ES 2.0 calls into D3D11, enabling OpenGL-based rendering on
+Xbox One and desktop UWP where native OpenGL is unavailable.
+
+The ANGLE source tree and Visual Studio projects are included at
+`project\msvc\BoxedWine\uwp\Angle\`.  Before building the main UWP app you must
+build ANGLE:
+
+1. Open `project\msvc\BoxedWine\uwp\Angle\winrt\10\src\angle.sln` in Visual Studio 2022.
+2. Set the configuration to match what you will use for the main app (e.g. **Debug|x64** or **Release|x64**).
+3. Build the **libEGL** and **libGLESv2** projects.
+
+The build produces:
+- `Angle\winrt\10\src\$(Configuration)_x64\libEGL.dll` / `libGLESv2.dll` (runtime DLLs)
+- `Angle\winrt\10\src\$(Configuration)_x64\lib\libEGL.lib` / `libGLESv2.lib` (import libraries)
+
+These are automatically referenced by `uwp.vcxproj` and deployed to the app package.
 
 ### Build Steps
 
@@ -103,8 +109,8 @@ When Boxedwine UWP starts for the first time it shows a setup screen:
 
 - **broadFileSystemAccess** capability is declared in the manifest.  On Windows 10 1903+
   the user must grant this permission in Settings → Privacy → File system.
-- Direct3D-accelerated rendering via the Mesa Gallium driver requires the DXIL shader
-  compiler (`dxil.dll`) which is part of the Windows 10 SDK Redistributables.
+- Rendering uses ANGLE (D3D11 → OpenGL ES 2.0).  You must build the ANGLE projects
+  in `uwp\Angle\winrt\10\src\angle.sln` before building the main UWP app.
 - Networking support is limited (the same limitation as the desktop version of Boxedwine).
 - The virtual cursor is rendered by the app itself; the system cursor is hidden inside the
   window.

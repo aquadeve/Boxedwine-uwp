@@ -230,7 +230,7 @@
 	      		    onecore.lib;
 	      		    WindowsApp.lib;
 			    d3d11.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(SolutionDir)\deps\lib;$(VCInstallDir)\lib\store\amd64;$(VCInstallDir)\lib\amd64;C:\Users\KantzJr\Documents\GitHub\Boxedwine-uwp\project\msvc\BoxedWine\uwp\Angle\winrt\10\src\Debug_x64\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(SolutionDir)\deps\lib;$(VCInstallDir)\lib\store\amd64;$(VCInstallDir)\lib\amd64;$(ProjectDir)Angle\winrt\10\src\Debug_x64\lib</AdditionalLibraryDirectories>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
@@ -271,7 +271,7 @@
 	      		    onecore.lib;
 	      		    WindowsApp.lib;
 			    d3d11.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(SolutionDir)\deps\lib; $(VCInstallDir)\lib\store\amd64; $(VCInstallDir)\lib\amd64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(SolutionDir)\deps\lib; $(VCInstallDir)\lib\store\amd64; $(VCInstallDir)\lib\amd64; $(ProjectDir)Angle\winrt\10\src\Release_x64\lib</AdditionalLibraryDirectories>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
     </Link>
     <ClCompile>
@@ -369,19 +369,45 @@
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\MeshContentTask.targets" />
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ShaderGraphContentTask.targets" />
   </ImportGroup>
-  <!-- Mesa and SDL deps -->
+  <!-- SDL and zlib deps -->
   <ItemGroup>
-    <Content Include="$(SolutionDir)/deps/bin/*.dll">
-      <Link>%(Filename)%(Extension)</Link>
+    <Content Include="$(SolutionDir)/deps/bin/SDL2.dll">
+      <Link>SDL2.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(SolutionDir)/deps/bin/z-1.dll">
+      <Link>z-1.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="$(SolutionDir)/deps/pointer_arrow.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <!-- Redist provided by ms / required by mesa gallium -->
+  <!-- ANGLE DLLs (D3D11 -> OpenGL ES translation layer) -->
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Content Include="$(ProjectDir)Angle\winrt\10\src\Debug_x64\libEGL.dll">
+      <Link>libEGL.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(ProjectDir)Angle\winrt\10\src\Debug_x64\libGLESv2.dll">
+      <Link>libGLESv2.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Content Include="$(ProjectDir)Angle\winrt\10\src\Release_x64\libEGL.dll">
+      <Link>libEGL.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(ProjectDir)Angle\winrt\10\src\Release_x64\libGLESv2.dll">
+      <Link>libGLESv2.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <!-- d3dcompiler_47 required by ANGLE's D3D11 backend (from Windows SDK) -->
   <ItemGroup>
-    <Content Include="C:\Program Files (x86)\Windows Kits\10\Redist\D3D\x64\dxil.dll">
+    <Content Include="$(WindowsSdkDir)Redist\D3D\x64\d3dcompiler_47.dll" Condition="Exists('$(WindowsSdkDir)Redist\D3D\x64\d3dcompiler_47.dll')">
+      <Link>d3dcompiler_47.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
