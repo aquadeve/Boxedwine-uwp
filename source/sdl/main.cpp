@@ -26,6 +26,10 @@
 #endif
 #include "knativesystem.h"
 
+#ifdef BOXEDWINE_ANDROID
+#include "../android/android_emulator.h"
+#endif
+
 #ifdef BOXEDWINE_MSVC
 #include <Windows.h>
 #endif
@@ -89,6 +93,31 @@ int boxedmain(int argc, const char **argv) {
     BoxedwineData::init(argc, argv);
 #endif
     if (!startupArgs.shouldStartUI()) {
+#ifdef BOXEDWINE_ANDROID
+        if (!startupArgs.apkPath.isEmpty()) {
+            // APK mode: launch the Android emulator directly
+            klog("APK mode: %s", startupArgs.apkPath.c_str());
+
+            AndroidEmulatorConfig config = {};
+            config.apk_path = startupArgs.apkPath.c_str();
+            config.screen_width = 1280;
+            config.screen_height = 720;
+            config.verbosity = 2;
+            config.main_lib = nullptr;
+            config.data_dir = nullptr;
+
+            AndroidEmulator emu = {};
+            if (!android_emulator_init(&emu, &config)) {
+                klog("Failed to initialise Android emulator for APK: %s", startupArgs.apkPath.c_str());
+                return 1;
+            }
+            int result = android_emulator_run(&emu);
+            android_emulator_destroy(&emu);
+            klog("Android emulator exited with code %d", result);
+            KNativeSystem::cleanup();
+            return result;
+        }
+#endif
         if (!startupArgs.apply()) {
             return 1;
         }

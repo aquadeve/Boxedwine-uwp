@@ -79,9 +79,11 @@ extern "C" int SDL_main(int argc, char *argv[])
     config.data_dir      = nullptr;
 
     // Parse command-line arguments
+    // Accepts both --apk and -apk (single/double dash) for compatibility
+    // with buildArgs() which uses single-dash format.
     // Usage: boxedwine-android [--apk <path>] [--width W] [--height H] [--lib <libname>] [--data <dir>]
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--apk") == 0 && i + 1 < argc) {
+        if ((strcmp(argv[i], "--apk") == 0 || strcmp(argv[i], "-apk") == 0) && i + 1 < argc) {
             config.apk_path = argv[++i];
         } else if (strcmp(argv[i], "--width") == 0 && i + 1 < argc) {
             config.screen_width = atoi(argv[++i]);

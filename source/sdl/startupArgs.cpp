@@ -431,7 +431,7 @@ bool StartUpArgs::apply() {
         }
     }
 
-    if (this->args.size()==0) {
+    if (this->args.size()==0 && this->apkPath.isEmpty()) {
         args.push_back(B("/bin/wine"));
         args.push_back(B("explorer"));
         args.push_back(B("/desktop=shell"));
