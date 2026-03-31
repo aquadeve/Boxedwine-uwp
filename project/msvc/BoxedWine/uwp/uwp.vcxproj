@@ -219,7 +219,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
       <AdditionalDependencies>
-	      		    opengl32.lib;
+	      		    libEGL.lib;
+	      		    libGLESv2.lib;
 	      		    z.lib;
 	      		    SDL2.lib;
 	      		    $(SolutionDir)x64\Release\libuwp\libuwp.lib;
@@ -228,7 +229,7 @@
 	      		    ntdll.lib;
 	      		    onecore.lib;
 	      		    WindowsApp.lib;
-			    d3d12.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			    d3d11.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(SolutionDir)\deps\lib; $(VCInstallDir)\lib\store\amd64; $(VCInstallDir)\lib\amd64</AdditionalLibraryDirectories>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <SubSystem>Windows</SubSystem>
@@ -240,6 +241,7 @@
       <AdditionalIncludeDirectories>
 		$(SolutionDir)deps\include;
 		$(ProjectDir);
+		$(ProjectDir)Angle\include;
 		$(ProjectDir)..\..\..\..\source\android;
 		$(ProjectDir)..\..\..\..\source;
 		$(ProjectDir)..\..\..\..\lib\zlib;
@@ -255,7 +257,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
       <AdditionalDependencies>
-			    opengl32.lib;
+			    libEGL.lib;
+			    libGLESv2.lib;
 	      		    z.lib;
 	      		    SDL2.lib;
 	      		    $(SolutionDir)x64\Release\libuwp\libuwp.lib;
@@ -264,8 +267,7 @@
 	      		    ntdll.lib;
 	      		    onecore.lib;
 	      		    WindowsApp.lib;
-			    SDL2.lib; 
-			    d3d12.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			    d3d11.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(SolutionDir)\deps\lib; $(VCInstallDir)\lib\store\amd64; $(VCInstallDir)\lib\amd64</AdditionalLibraryDirectories>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
     </Link>
@@ -275,6 +277,7 @@
       <AdditionalIncludeDirectories>
 	      	      $(SolutionDir)deps\include;
 		      $(ProjectDir);
+		      $(ProjectDir)Angle\include;
 		      $(ProjectDir)..\..\..\..\source\android;
 		      $(ProjectDir)..\..\..\..\source;
 		      $(ProjectDir)..\..\..\..\lib\zlib;
@@ -348,6 +351,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\angle_renderer.cpp" />
     <ClCompile Include="..\..\..\..\source\android\android_emulator.cpp" />
     <ClCompile Include="..\..\..\..\source\android\apk_loader.cpp" />
     <ClCompile Include="..\..\..\..\source\android\android_linker.cpp" />

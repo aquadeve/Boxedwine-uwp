@@ -32,8 +32,13 @@
 #pragma comment(lib, "runtimeobject.lib")
 #endif
 
+// OpenGL ES 2.0 (via ANGLE on UWP — D3D11 backend)
+#define GL_GLEXT_PROTOTYPES
+#include <GLES2/gl2.h>
+
 // Android emulator core
 #include "../../../../source/android/android_emulator.h"
+#include "../../../../source/android/angle_renderer.h"
 
 // Capture the UI-thread dispatcher so that libuwp can later dispatch file-picker
 // dialogs back to the correct thread from the SDL game thread.
@@ -145,8 +150,6 @@ extern "C" int SDL_main(int argc, char *argv[])
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX_ONE, "1");
     // Ensure the virtual cursor is visible (useful on Xbox when no mouse)
     SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
-    // Try Direct3D11, but let SDL fall back if it fails
-    // SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d11"); // Don't force software renderer, let SDL choose the best available
 
     // Initialise SDL for display, input, and game controllers
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) < 0) {
@@ -154,26 +157,58 @@ extern "C" int SDL_main(int argc, char *argv[])
         return 1;
     }
 
+    // -------------------------------------------------------------------------
+    // ANGLE / OpenGL ES 2.0 setup
+    //
+    // Request an OpenGL ES 2.0 context from SDL.  On UWP/Xbox, SDL uses ANGLE
+    // which translates GLES2 → D3D11 under the hood.  This gives us a real
+    // OpenGL ES context that works everywhere D3D11 is available.
+    // -------------------------------------------------------------------------
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE,     8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,   8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,    8);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,   8);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,   0);   /* 2D only — no depth needed */
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
     SDL_Window *window = SDL_CreateWindow(
         "Boxedwine Android",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         config.screen_width, config.screen_height,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
 
     if (!window) {
-        SDL_Log("SDL_CreateWindow failed: %s", SDL_GetError());
+        SDL_Log("SDL_CreateWindow (OpenGL) failed: %s", SDL_GetError());
         SDL_Quit();
         return 1;
     }
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (!renderer) {
-        SDL_Log("Accelerated renderer failed, trying software...");
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    if (!gl_context) {
+        SDL_Log("SDL_GL_CreateContext failed: %s — ANGLE/D3D11 may not be available", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
     }
 
-    if (!renderer) {
-        SDL_Log("SDL_CreateRenderer failed: %s", SDL_GetError());
+    /* Enable vsync (1) for smooth presentation.  Set to 0 for uncapped. */
+    SDL_GL_SetSwapInterval(1);
+
+    if (config.verbosity >= 1) {
+        SDL_Log("OpenGL ES renderer: %s", (const char*)glGetString(GL_RENDERER));
+        SDL_Log("OpenGL ES version:  %s", (const char*)glGetString(GL_VERSION));
+        SDL_Log("ANGLE D3D11 → OpenGL ES translation layer active");
+    }
+
+    /* Create the ANGLE/GLES2 framebuffer renderer */
+    AngleRenderer *gl_renderer = angle_renderer_create(config.screen_width, config.screen_height);
+    if (!gl_renderer) {
+        SDL_Log("angle_renderer_create failed");
+        SDL_GL_DeleteContext(gl_context);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
@@ -204,7 +239,8 @@ extern "C" int SDL_main(int argc, char *argv[])
             "Failed to initialise Android emulator.\n"
             "Check that the APK contains ARMv7 native libraries.",
             window);
-        SDL_DestroyRenderer(renderer);
+        angle_renderer_destroy(gl_renderer);
+        SDL_GL_DeleteContext(gl_context);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
@@ -328,20 +364,24 @@ extern "C" int SDL_main(int argc, char *argv[])
             android_emulator_step(emu, CPU_STEPS_PER_FRAME);
         }
 
-        // Render: present emulated framebuffer (placeholder: clear to dark grey)
-        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
-        SDL_RenderClear(renderer);
+        // ---- ANGLE/GLES2 rendering ----
+        // Upload the emulator's software framebuffer (when it has one).
+        // TODO: Replace NULL with the actual framebuffer pointer once the
+        // emulator produces pixel output (e.g. via ANativeWindow_Buffer or
+        // guest eglSwapBuffers).
+        angle_renderer_upload(gl_renderer, NULL);
+
+        // Draw the emulator framebuffer as a fullscreen quad via GLES2
+        angle_renderer_draw(gl_renderer, config.screen_width, config.screen_height);
 
         // Draw virtual cursor crosshair when gamepad is active (for Xbox)
         if (gamepad) {
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 180);
-            SDL_Rect h = { (int)virtual_cursor_x - 8, (int)virtual_cursor_y, 16, 1 };
-            SDL_Rect v = { (int)virtual_cursor_x, (int)virtual_cursor_y - 8, 1, 16 };
-            SDL_RenderFillRect(renderer, &h);
-            SDL_RenderFillRect(renderer, &v);
+            angle_renderer_draw_cursor(gl_renderer, virtual_cursor_x, virtual_cursor_y,
+                                       config.screen_width, config.screen_height);
         }
 
-        SDL_RenderPresent(renderer);
+        // Present via ANGLE → D3D11 swap chain
+        SDL_GL_SwapWindow(window);
     }
 
     if (config.verbosity >= 1)
@@ -350,7 +390,8 @@ extern "C" int SDL_main(int argc, char *argv[])
     int exit_code = emu->exit_code;
     android_emulator_destroy(emu);
     if (gamepad) SDL_GameControllerClose(gamepad);
-    SDL_DestroyRenderer(renderer);
+    angle_renderer_destroy(gl_renderer);
+    SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return exit_code;

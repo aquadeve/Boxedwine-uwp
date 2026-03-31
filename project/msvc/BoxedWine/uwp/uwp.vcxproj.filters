@@ -37,6 +37,9 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\android\angle_renderer.cpp">
+      <Filter>Source Files\android</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\source\android\android_emulator.cpp">
       <Filter>Source Files\android</Filter>
     </ClCompile>
