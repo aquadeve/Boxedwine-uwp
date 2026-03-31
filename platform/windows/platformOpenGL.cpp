@@ -393,7 +393,9 @@ void PlatformOpenGL::init() {
                 formats.push_back(format);
 			}
             if (KSystem::videoOption != VIDEO_NO_WINDOW) {
+#ifndef BOXEDWINE_UWP_EGL
                 hardwareListLoaded = queryOpenGL(formatsById, formats);
+#endif
             }
 
 		}
