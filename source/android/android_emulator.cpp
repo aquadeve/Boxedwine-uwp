@@ -37,6 +37,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <wctype.h>
+#include <wchar.h>
+#include <locale.h>
+#include <time.h>
+#include <errno.h>
+
+#ifdef _WIN32
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
+#  pragma comment(lib, "ws2_32.lib")
+#else
+#  include <sys/socket.h>
+#  include <sys/select.h>
+#  include <netinet/in.h>
+#  include <arpa/inet.h>
+#  include <netdb.h>
+#  include <unistd.h>
+#  include <poll.h>
+#  include <sys/uio.h>
+#  include <sys/stat.h>
+#  include <dirent.h>
+#  include <fcntl.h>
+#endif
 
 /* -------------------------------------------------------------------------
  * Debug / error logging macros.
@@ -218,8 +244,10 @@ static void mem64_w64(void *ctx, uint64_t addr, uint64_t v) {
 #define BIONIC_STUB_BASE    0x1000u
 #define BIONIC_STUB_STRIDE  8u          /* 8 bytes per stub: SVC imm24 + BX LR */
 
-/* Stub index for each bionic function */
+/* Stub index for each bionic function.
+ * Each entry gets a Thumb SVC+BX LR trampoline at a fixed VA. */
 enum BionicStub {
+    /* ---- Original 25 stubs (1-25) ---- */
     STUB_PTHREAD_CREATE = 1,
     STUB_PTHREAD_JOIN,
     STUB_PTHREAD_MUTEX_LOCK,
@@ -245,37 +273,423 @@ enum BionicStub {
     STUB_DLSYM,
     STUB_DLCLOSE,
     STUB_DLERROR,
-    STUB_COUNT
+
+    /* ---- pthread extensions ---- */
+    STUB_PTHREAD_MUTEX_INIT,
+    STUB_PTHREAD_MUTEX_DESTROY,
+    STUB_PTHREAD_SELF,
+    STUB_PTHREAD_EQUAL,
+    STUB_PTHREAD_ATTR_INIT,
+    STUB_PTHREAD_ATTR_DESTROY,
+    STUB_PTHREAD_ATTR_SETDETACHSTATE,
+    STUB_PTHREAD_ATTR_SETSCHEDPARAM,
+    STUB_PTHREAD_ATTR_SETSTACKSIZE,
+    STUB_PTHREAD_COND_INIT,
+    STUB_PTHREAD_COND_DESTROY,
+    STUB_PTHREAD_COND_WAIT,
+    STUB_PTHREAD_COND_SIGNAL,
+    STUB_PTHREAD_COND_BROADCAST,
+    STUB_PTHREAD_COND_TIMEDWAIT,
+    STUB_PTHREAD_DETACH,
+    STUB_PTHREAD_KEY_CREATE,
+    STUB_PTHREAD_KEY_DELETE,
+    STUB_PTHREAD_GETSPECIFIC,
+    STUB_PTHREAD_SETSPECIFIC,
+    STUB_PTHREAD_ONCE,
+    STUB_PTHREAD_MUTEXATTR_INIT,
+    STUB_PTHREAD_MUTEXATTR_DESTROY,
+
+    /* ---- C library / stdio ---- */
+    STUB_FOPEN,
+    STUB_FCLOSE,
+    STUB_FREAD,
+    STUB_FWRITE,
+    STUB_FSEEK,
+    STUB_FTELL,
+    STUB_FGETS,
+    STUB_FPUTS,
+    STUB_FEOF,
+    STUB_FERROR,
+    STUB_FFLUSH,
+    STUB_FPRINTF,
+    STUB_FSCANF,
+    STUB_SSCANF,
+    STUB_VSNPRINTF,
+    STUB_VSPRINTF,
+    STUB_FPUTC,
+    STUB_FDOPEN,
+    STUB_SETVBUF,
+    STUB_GETC,
+    STUB_PUTC,
+    STUB_UNGETC,
+    STUB_PUTCHAR,
+
+    /* ---- C string/memory ---- */
+    STUB_MEMCMP,
+    STUB_MEMCHR,
+    STUB_STRCHR,
+    STUB_STRPBRK,
+    STUB_STRCAT,
+    STUB_STRTOL,
+    STUB_STRTOK,
+    STUB_STRERROR,
+    STUB_STRTOULL,
+    STUB_STRTOD,
+    STUB_STRCASECMP,
+    STUB_STRNCASECMP,
+    STUB_STRCOLL,
+    STUB_STRXFRM,
+    STUB_ATOI,
+
+    /* ---- Math ---- */
+    STUB_SIN,
+    STUB_COS,
+    STUB_SINF,
+    STUB_COSF,
+    STUB_ATAN,
+    STUB_ATAN2,
+    STUB_ATAN2F,
+    STUB_SQRT,
+    STUB_SQRTF,
+    STUB_POW,
+    STUB_POWF,
+    STUB_CEIL,
+    STUB_CEILF,
+    STUB_FLOOR,
+    STUB_FLOORF,
+    STUB_FMOD,
+    STUB_FMODF,
+    STUB_MODFF,
+    STUB_LDEXP,
+    STUB_LOGF,
+
+    /* ---- Time ---- */
+    STUB_GETTIMEOFDAY,
+    STUB_USLEEP,
+    STUB_TIME,
+    STUB_NANOSLEEP,
+    STUB_GMTIME,
+    STUB_FTIME,
+    STUB_STRFTIME,
+
+    /* ---- Process ---- */
+    STUB_GETPID,
+    STUB_RAISE,
+    STUB_BSD_SIGNAL,
+    STUB_SYSCONF,
+    STUB_SETLOCALE,
+
+    /* ---- I/O / filesystem ---- */
+    STUB_OPEN_POSIX,   /* "open" (not syscall, libc wrapper) */
+    STUB_CLOSE_POSIX,
+    STUB_READ_POSIX,
+    STUB_WRITE_POSIX,
+    STUB_LSEEK_POSIX,
+    STUB_FCNTL,
+    STUB_PIPE,
+    STUB_REMOVE,
+    STUB_RENAME,
+    STUB_MKDIR,
+    STUB_ACCESS,
+    STUB_OPENDIR,
+    STUB_READDIR,
+    STUB_CLOSEDIR,
+    STUB_FSTAT,
+    STUB_WRITEV,
+    STUB_POLL,
+    STUB_IOCTL,
+    STUB_SELECT,
+
+    /* ---- Network (BSD sockets) ---- */
+    STUB_SOCKET,
+    STUB_BIND,
+    STUB_LISTEN,
+    STUB_ACCEPT,
+    STUB_CONNECT,
+    STUB_SEND,
+    STUB_RECV,
+    STUB_SENDTO,
+    STUB_RECVFROM,
+    STUB_SETSOCKOPT,
+    STUB_GETSOCKOPT,
+    STUB_GETSOCKNAME,
+    STUB_GETHOSTBYNAME,
+    STUB_GETHOSTNAME,
+    STUB_INET_NTOA,
+    STUB_INET_ADDR,
+    STUB_SHUTDOWN,
+
+    /* ---- zlib ---- */
+    STUB_DEFLATEINIT,
+    STUB_DEFLATEEND,
+    STUB_DEFLATE,
+    STUB_INFLATEINIT,
+    STUB_INFLATEEND,
+    STUB_INFLATE,
+    STUB_DEFLATEINIT2,
+    STUB_UNCOMPRESS,
+
+    /* ---- Random ---- */
+    STUB_LRAND48,
+    STUB_SRAND48,
+    STUB_DIV,
+
+    /* ---- Wide char ---- */
+    STUB_WCSLEN,
+    STUB_WMEMCHR,
+    STUB_WMEMCPY,
+    STUB_WMEMSET,
+    STUB_WMEMMOVE,
+    STUB_WMEMCMP,
+    STUB_PUTWC,
+    STUB_GETWC,
+    STUB_UNGETWC,
+    STUB_WCRTOMB,
+    STUB_MBRTOWC,
+    STUB_WCSCOLL,
+    STUB_WCSXFRM,
+    STUB_WCSFTIME,
+    STUB_WCTYPE,
+    STUB_TOWUPPER,
+    STUB_TOWLOWER,
+    STUB_ISWCTYPE,
+    STUB_WCTOB,
+    STUB_BTOWC,
+
+    /* ---- Bionic / Android internal ---- */
+    STUB___ERRNO,
+    STUB___STACK_CHK_FAIL,
+    STUB___CXA_ATEXIT,
+    STUB___CXA_FINALIZE,
+    STUB___ANDROID_LOG_PRINT,
+    STUB_SYSCALL,
+
+    /* ---- OpenGL ES 1.x fixed function ---- */
+    STUB_GLENABLE,
+    STUB_GLDISABLE,
+    STUB_GLCLEAR,
+    STUB_GLCLEARCOLOR,
+    STUB_GLVIEWPORT,
+    STUB_GLSCISSOR,
+    STUB_GLMATRIXMODE,
+    STUB_GLLOADIDENTITY,
+    STUB_GLPUSHMATRIX,
+    STUB_GLPOPMATRIX,
+    STUB_GLTRANSLATEF,
+    STUB_GLSCALEF,
+    STUB_GLROTATEF,
+    STUB_GLORTHOF,
+    STUB_GLMULTMATRIXF,
+    STUB_GLCOLOR4F,
+    STUB_GLBLENDFUNC,
+    STUB_GLDEPTHFUNC,
+    STUB_GLDEPTHMASK,
+    STUB_GLDEPTHRANGEF,
+    STUB_GLALPHAFUNC,
+    STUB_GLCULLFACE,
+    STUB_GLSHADEMODEL,
+    STUB_GLENABLECLIENTSTATE,
+    STUB_GLDISABLECLIENTSTATE,
+    STUB_GLHINT,
+    STUB_GLSTENCILFUNC,
+    STUB_GLSTENCILMASK,
+    STUB_GLSTENCILOP,
+    STUB_GLLIGHTMODELF,
+    STUB_GLLIGHTFV,
+    STUB_GLPOLYGONOFFSET,
+    STUB_GLLINEWIDTH,
+    STUB_GLCOLORMASK,
+    STUB_GLFOGF,
+    STUB_GLFOGFV,
+    STUB_GLFOGX,
+    STUB_GLBINDTEXTURE,
+    STUB_GLGENTEXTURES,
+    STUB_GLDELETETEXTURES,
+    STUB_GLTEXIMAGE2D,
+    STUB_GLTEXSUBIMAGE2D,
+    STUB_GLTEXPARAMETERI,
+    STUB_GLVERTEXPOINTER,
+    STUB_GLTEXCOORDPOINTER,
+    STUB_GLCOLORPOINTER,
+    STUB_GLNORMALPOINTER,
+    STUB_GLBINDBUFFER,
+    STUB_GLGENBUFFERS,
+    STUB_GLDELETEBUFFERS,
+    STUB_GLBUFFERDATA,
+    STUB_GLDRAWARRAYS,
+    STUB_GLDRAWELEMENTS,
+    STUB_GLGETERROR,
+    STUB_GLGETSTRING,
+    STUB_GLGETFLOATV,
+    STUB_GLREADPIXELS,
+
+    /* ---- EGL ---- */
+    STUB_EGLGETDISPLAY,
+    STUB_EGLINITIALIZE,
+    STUB_EGLCHOOSECONFIG,
+    STUB_EGLGETCONFIGATTRIB,
+    STUB_EGLCREATEWINDOWSURFACE,
+    STUB_EGLCREATECONTEXT,
+    STUB_EGLMAKECURRENT,
+    STUB_EGLQUERYSURFACE,
+    STUB_EGLSWAPBUFFERS,
+    STUB_EGLSWAPINTERVAL,
+    STUB_EGLGETCURRENTDISPLAY,
+    STUB_EGLDESTROYCONTEXT,
+    STUB_EGLDESTROYSURFACE,
+    STUB_EGLTERMINATE,
+
+    /* ---- Android NDK ---- */
+    STUB_AASSETMANAGER_OPEN,
+    STUB_AASSET_GETLENGTH,
+    STUB_AASSET_GETBUFFER,
+    STUB_AASSET_CLOSE,
+    STUB_AINPUTEVENT_GETTYPE,
+    STUB_AKEYEVENT_GETACTION,
+    STUB_AKEYEVENT_GETKEYCODE,
+    STUB_AKEYEVENT_GETMETASTATE,
+    STUB_AINPUTEVENT_GETDEVICEID,
+    STUB_AKEYEVENT_GETREPEATCOUNT,
+    STUB_AINPUTEVENT_GETSOURCE,
+    STUB_AMOTIONEVENT_GETACTION,
+    STUB_AMOTIONEVENT_GETPOINTERID,
+    STUB_AMOTIONEVENT_GETX,
+    STUB_AMOTIONEVENT_GETY,
+    STUB_AMOTIONEVENT_GETPOINTERCOUNT,
+    STUB_AINPUTQUEUE_GETEVENT,
+    STUB_AINPUTQUEUE_FINISHEVENT,
+    STUB_AINPUTQUEUE_PREDISPATCHEVENT,
+    STUB_AINPUTQUEUE_ATTACHLOOPER,
+    STUB_AINPUTQUEUE_DETACHLOOPER,
+    STUB_ALOOPER_POLLALL,
+    STUB_ALOOPER_PREPARE,
+    STUB_ALOOPER_ADDFD,
+    STUB_ANATIVEACTIVITY_FINISH,
+    STUB_ANATIVEWINDOW_SETBUFFERSGEOMETRY,
+    STUB_ACONFIGURATION_NEW,
+    STUB_ACONFIGURATION_FROMASSETMANAGER,
+    STUB_ACONFIGURATION_GETLANGUAGE,
+    STUB_ACONFIGURATION_GETCOUNTRY,
+    STUB_ACONFIGURATION_DELETE,
+
+    /* ---- OpenSL ES ---- */
+    STUB_SLCREATEENGINE,
+
+    STUB_COUNT  /* must be last */
 };
 
+/* Data symbol virtual addresses (not trampolines, just reserved memory) */
+#define DATA_SYMBOL_BASE  0x0E00u
+#define DATA_SYMBOL_STRIDE 64u
+
 /* Map stub index to symbol name */
-static const char *stub_names[] = {
+static const char *stub_names[STUB_COUNT] = {
     NULL,
-    "pthread_create",
-    "pthread_join",
-    "pthread_mutex_lock",
-    "pthread_mutex_unlock",
-    "malloc",
-    "free",
-    "calloc",
-    "realloc",
-    "memcpy",
-    "memmove",
-    "memset",
-    "strlen",
-    "strcpy",
-    "strncpy",
-    "strcmp",
-    "strncmp",
-    "printf",
-    "sprintf",
-    "snprintf",
-    "puts",
-    "abort",
-    "dlopen",
-    "dlsym",
-    "dlclose",
-    "dlerror",
+    /* 1-25: original stubs */
+    "pthread_create", "pthread_join", "pthread_mutex_lock", "pthread_mutex_unlock",
+    "malloc", "free", "calloc", "realloc",
+    "memcpy", "memmove", "memset",
+    "strlen", "strcpy", "strncpy", "strcmp", "strncmp",
+    "printf", "sprintf", "snprintf", "puts", "abort",
+    "dlopen", "dlsym", "dlclose", "dlerror",
+    /* pthread extensions */
+    "pthread_mutex_init", "pthread_mutex_destroy",
+    "pthread_self", "pthread_equal",
+    "pthread_attr_init", "pthread_attr_destroy",
+    "pthread_attr_setdetachstate", "pthread_attr_setschedparam",
+    "pthread_attr_setstacksize",
+    "pthread_cond_init", "pthread_cond_destroy",
+    "pthread_cond_wait", "pthread_cond_signal", "pthread_cond_broadcast",
+    "pthread_cond_timedwait", "pthread_detach",
+    "pthread_key_create", "pthread_key_delete",
+    "pthread_getspecific", "pthread_setspecific",
+    "pthread_once",
+    "pthread_mutexattr_init", "pthread_mutexattr_destroy",
+    /* C stdio */
+    "fopen", "fclose", "fread", "fwrite",
+    "fseek", "ftell", "fgets", "fputs",
+    "feof", "ferror", "fflush", "fprintf", "fscanf", "sscanf",
+    "vsnprintf", "vsprintf", "fputc", "fdopen", "setvbuf",
+    "getc", "putc", "ungetc", "putchar",
+    /* C string/memory */
+    "memcmp", "memchr", "strchr", "strpbrk", "strcat",
+    "strtol", "strtok", "strerror", "strtoull", "strtod",
+    "strcasecmp", "strncasecmp", "strcoll", "strxfrm", "atoi",
+    /* math */
+    "sin", "cos", "sinf", "cosf",
+    "atan", "atan2", "atan2f",
+    "sqrt", "sqrtf", "pow", "powf",
+    "ceil", "ceilf", "floor", "floorf",
+    "fmod", "fmodf", "modff", "ldexp", "logf",
+    /* time */
+    "gettimeofday", "usleep", "time", "nanosleep",
+    "gmtime", "ftime", "strftime",
+    /* process */
+    "getpid", "raise", "bsd_signal", "sysconf", "setlocale",
+    /* I/O / filesystem */
+    "open", "close", "read", "write", "lseek",
+    "fcntl", "pipe", "remove", "rename", "mkdir", "access",
+    "opendir", "readdir", "closedir",
+    "fstat", "writev", "poll", "ioctl", "select",
+    /* network */
+    "socket", "bind", "listen", "accept", "connect",
+    "send", "recv", "sendto", "recvfrom",
+    "setsockopt", "getsockopt", "getsockname",
+    "gethostbyname", "gethostname", "inet_ntoa", "inet_addr", "shutdown",
+    /* zlib */
+    "deflateInit_", "deflateEnd", "deflate",
+    "inflateInit_", "inflateEnd", "inflate",
+    "deflateInit2_", "uncompress",
+    /* random */
+    "lrand48", "srand48", "div",
+    /* wide char */
+    "wcslen", "wmemchr", "wmemcpy", "wmemset", "wmemmove", "wmemcmp",
+    "putwc", "getwc", "ungetwc",
+    "wcrtomb", "mbrtowc", "wcscoll", "wcsxfrm", "wcsftime",
+    "wctype", "towupper", "towlower", "iswctype", "wctob", "btowc",
+    /* bionic internal */
+    "__errno", "__stack_chk_fail",
+    "__cxa_atexit", "__cxa_finalize",
+    "__android_log_print", "syscall",
+    /* GL ES 1.x */
+    "glEnable", "glDisable", "glClear", "glClearColor",
+    "glViewport", "glScissor",
+    "glMatrixMode", "glLoadIdentity", "glPushMatrix", "glPopMatrix",
+    "glTranslatef", "glScalef", "glRotatef", "glOrthof", "glMultMatrixf",
+    "glColor4f", "glBlendFunc",
+    "glDepthFunc", "glDepthMask", "glDepthRangef",
+    "glAlphaFunc", "glCullFace", "glShadeModel",
+    "glEnableClientState", "glDisableClientState",
+    "glHint", "glStencilFunc", "glStencilMask", "glStencilOp",
+    "glLightModelf", "glLightfv", "glPolygonOffset", "glLineWidth",
+    "glColorMask",
+    "glFogf", "glFogfv", "glFogx",
+    "glBindTexture", "glGenTextures", "glDeleteTextures",
+    "glTexImage2D", "glTexSubImage2D", "glTexParameteri",
+    "glVertexPointer", "glTexCoordPointer", "glColorPointer", "glNormalPointer",
+    "glBindBuffer", "glGenBuffers", "glDeleteBuffers", "glBufferData",
+    "glDrawArrays", "glDrawElements",
+    "glGetError", "glGetString", "glGetFloatv", "glReadPixels",
+    /* EGL */
+    "eglGetDisplay", "eglInitialize", "eglChooseConfig", "eglGetConfigAttrib",
+    "eglCreateWindowSurface", "eglCreateContext", "eglMakeCurrent",
+    "eglQuerySurface", "eglSwapBuffers", "eglSwapInterval",
+    "eglGetCurrentDisplay", "eglDestroyContext", "eglDestroySurface", "eglTerminate",
+    /* Android NDK */
+    "AAssetManager_open", "AAsset_getLength", "AAsset_getBuffer", "AAsset_close",
+    "AInputEvent_getType", "AKeyEvent_getAction", "AKeyEvent_getKeyCode",
+    "AKeyEvent_getMetaState", "AInputEvent_getDeviceId", "AKeyEvent_getRepeatCount",
+    "AInputEvent_getSource",
+    "AMotionEvent_getAction", "AMotionEvent_getPointerId",
+    "AMotionEvent_getX", "AMotionEvent_getY", "AMotionEvent_getPointerCount",
+    "AInputQueue_getEvent", "AInputQueue_finishEvent",
+    "AInputQueue_preDispatchEvent", "AInputQueue_attachLooper", "AInputQueue_detachLooper",
+    "ALooper_pollAll", "ALooper_prepare", "ALooper_addFd",
+    "ANativeActivity_finish", "ANativeWindow_setBuffersGeometry",
+    "AConfiguration_new", "AConfiguration_fromAssetManager",
+    "AConfiguration_getLanguage", "AConfiguration_getCountry", "AConfiguration_delete",
+    /* OpenSL ES */
+    "slCreateEngine",
 };
 
 /* ARM thumb SVC + BX LR encoding (Thumb-2 with SVC stub_id) */
@@ -315,25 +729,27 @@ static void install_stub_a64(uint8_t *mem, uint32_t va, uint32_t stub_id) {
  * ---------------------------------------------------------------------- */
 static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
     ArmV7State *cpu = &emu->cpu;
+    /* Helper macros for reading emulated memory strings/pointers */
+#define EMU_STR(va) ((va) < emu->mem_size ? (char*)(emu->mem + (va)) : (char*)"")
+#define EMU_PTR(va) ((va) < emu->mem_size ? (emu->mem + (va)) : (uint8_t*)NULL)
+#define BOUNDS_OK(va, sz) ((va) + (sz) <= emu->mem_size)
 
     switch ((BionicStub)stub_id) {
-        /* ---- Memory ---- */
+        /* ==================================================================
+         *  Memory allocation (bump allocator)
+         * ================================================================== */
         case STUB_MALLOC: {
-            uint32_t sz = cpu->r[0];
+            uint32_t sz = (cpu->r[0] + 7) & ~7u;
             uint32_t base = emu->syscall_state.brk_current;
-            sz = (sz + 7) & ~7u;
             if (base + sz <= emu->syscall_state.brk_max) {
                 memset(emu->mem + base, 0, sz);
                 emu->syscall_state.brk_current += sz;
                 cpu->r[0] = base;
-            } else {
-                cpu->r[0] = 0;
-            }
+            } else { cpu->r[0] = 0; }
             break;
         }
         case STUB_CALLOC: {
-            uint32_t n = cpu->r[0], sz = cpu->r[1];
-            uint32_t total = (n * sz + 7) & ~7u;
+            uint32_t total = (cpu->r[0] * cpu->r[1] + 7) & ~7u;
             uint32_t base  = emu->syscall_state.brk_current;
             if (base + total <= emu->syscall_state.brk_max) {
                 memset(emu->mem + base, 0, total);
@@ -343,14 +759,10 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
             break;
         }
         case STUB_FREE:
-            /* No-op for simple bump allocator */
             cpu->r[0] = 0; break;
         case STUB_REALLOC: {
-            /* Simplified: just allocate new, copy old */
-            uint32_t old_ptr = cpu->r[0];
-            uint32_t new_sz  = cpu->r[1];
-            uint32_t base    = emu->syscall_state.brk_current;
-            new_sz = (new_sz + 7) & ~7u;
+            uint32_t old_ptr = cpu->r[0], new_sz = (cpu->r[1] + 7) & ~7u;
+            uint32_t base = emu->syscall_state.brk_current;
             if (base + new_sz <= emu->syscall_state.brk_max) {
                 if (old_ptr && old_ptr < base) memcpy(emu->mem + base, emu->mem + old_ptr, new_sz);
                 emu->syscall_state.brk_current += new_sz;
@@ -359,102 +771,623 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
             break;
         }
 
-        /* ---- String / memory ops ---- */
+        /* ==================================================================
+         *  String / memory operations
+         * ================================================================== */
         case STUB_MEMCPY: {
-            uint32_t dst = cpu->r[0], src = cpu->r[1], n = cpu->r[2];
-            if (dst + n <= emu->mem_size && src + n <= emu->mem_size)
-                memcpy(emu->mem + dst, emu->mem + src, n);
-            cpu->r[0] = cpu->r[0]; break;
+            uint32_t d = cpu->r[0], s = cpu->r[1], n = cpu->r[2];
+            if (BOUNDS_OK(d, n) && BOUNDS_OK(s, n)) memcpy(emu->mem + d, emu->mem + s, n);
+            break; /* r0 = dst already */
         }
         case STUB_MEMMOVE: {
-            uint32_t dst = cpu->r[0], src = cpu->r[1], n = cpu->r[2];
-            if (dst + n <= emu->mem_size && src + n <= emu->mem_size)
-                memmove(emu->mem + dst, emu->mem + src, n);
-            cpu->r[0] = cpu->r[0]; break;
+            uint32_t d = cpu->r[0], s = cpu->r[1], n = cpu->r[2];
+            if (BOUNDS_OK(d, n) && BOUNDS_OK(s, n)) memmove(emu->mem + d, emu->mem + s, n);
+            break;
         }
         case STUB_MEMSET: {
-            uint32_t dst = cpu->r[0], val = cpu->r[1], n = cpu->r[2];
-            if (dst + n <= emu->mem_size)
-                memset(emu->mem + dst, (int)val, n);
-            cpu->r[0] = cpu->r[0]; break;
+            uint32_t d = cpu->r[0], v = cpu->r[1], n = cpu->r[2];
+            if (BOUNDS_OK(d, n)) memset(emu->mem + d, (int)v, n);
+            break;
         }
-        case STUB_STRLEN: {
-            uint32_t ptr = cpu->r[0];
-            if (ptr < emu->mem_size) {
-                cpu->r[0] = (uint32_t)strnlen((char*)emu->mem + ptr, emu->mem_size - ptr);
+        case STUB_MEMCMP: {
+            uint32_t a = cpu->r[0], b = cpu->r[1], n = cpu->r[2];
+            cpu->r[0] = (a < emu->mem_size && b < emu->mem_size)
+                ? (uint32_t)memcmp(emu->mem + a, emu->mem + b, n) : 1;
+            break;
+        }
+        case STUB_MEMCHR: {
+            uint32_t s = cpu->r[0], c = cpu->r[1], n = cpu->r[2];
+            if (s < emu->mem_size) {
+                uint8_t *p = (uint8_t*)memchr(emu->mem + s, (int)c, n);
+                cpu->r[0] = p ? (uint32_t)(p - emu->mem) : 0;
             } else { cpu->r[0] = 0; }
             break;
         }
+        case STUB_STRLEN: {
+            uint32_t p = cpu->r[0];
+            cpu->r[0] = (p < emu->mem_size) ? (uint32_t)strnlen(EMU_STR(p), emu->mem_size - p) : 0;
+            break;
+        }
         case STUB_STRCPY: {
-            uint32_t dst = cpu->r[0], src = cpu->r[1];
-            if (dst < emu->mem_size && src < emu->mem_size)
-                strncpy((char*)emu->mem + dst, (char*)emu->mem + src,
-                        emu->mem_size - dst - 1);
-            cpu->r[0] = cpu->r[0]; break;
+            uint32_t d = cpu->r[0], s = cpu->r[1];
+            if (d < emu->mem_size && s < emu->mem_size)
+                strncpy((char*)emu->mem + d, (char*)emu->mem + s, emu->mem_size - d - 1);
+            break;
         }
         case STUB_STRNCPY: {
-            uint32_t dst = cpu->r[0], src = cpu->r[1], n = cpu->r[2];
-            if (dst + n <= emu->mem_size && src + n <= emu->mem_size)
-                strncpy((char*)emu->mem + dst, (char*)emu->mem + src, n);
-            cpu->r[0] = cpu->r[0]; break;
+            uint32_t d = cpu->r[0], s = cpu->r[1], n = cpu->r[2];
+            if (BOUNDS_OK(d, n) && s < emu->mem_size)
+                strncpy((char*)emu->mem + d, (char*)emu->mem + s, n);
+            break;
         }
         case STUB_STRCMP: {
             uint32_t a = cpu->r[0], b = cpu->r[1];
-            if (a < emu->mem_size && b < emu->mem_size) {
-                cpu->r[0] = (uint32_t)strcmp((char*)emu->mem + a, (char*)emu->mem + b);
-            } else { cpu->r[0] = 1; }
+            cpu->r[0] = (a < emu->mem_size && b < emu->mem_size)
+                ? (uint32_t)strcmp(EMU_STR(a), EMU_STR(b)) : 1;
             break;
         }
         case STUB_STRNCMP: {
             uint32_t a = cpu->r[0], b = cpu->r[1], n = cpu->r[2];
-            if (a < emu->mem_size && b < emu->mem_size) {
-                cpu->r[0] = (uint32_t)strncmp((char*)emu->mem + a, (char*)emu->mem + b, n);
-            } else { cpu->r[0] = 1; }
+            cpu->r[0] = (a < emu->mem_size && b < emu->mem_size)
+                ? (uint32_t)strncmp(EMU_STR(a), EMU_STR(b), n) : 1;
             break;
         }
+        case STUB_STRCHR: {
+            uint32_t s = cpu->r[0]; int c = (int)cpu->r[1];
+            if (s < emu->mem_size) {
+                char *p = strchr(EMU_STR(s), c);
+                cpu->r[0] = p ? (uint32_t)(p - (char*)emu->mem) : 0;
+            } else { cpu->r[0] = 0; }
+            break;
+        }
+        case STUB_STRPBRK: {
+            uint32_t s = cpu->r[0], a = cpu->r[1];
+            if (s < emu->mem_size && a < emu->mem_size) {
+                char *p = strpbrk(EMU_STR(s), EMU_STR(a));
+                cpu->r[0] = p ? (uint32_t)(p - (char*)emu->mem) : 0;
+            } else { cpu->r[0] = 0; }
+            break;
+        }
+        case STUB_STRCAT: {
+            uint32_t d = cpu->r[0], s = cpu->r[1];
+            if (d < emu->mem_size && s < emu->mem_size) {
+                size_t dlen = strnlen(EMU_STR(d), emu->mem_size - d);
+                size_t slen = strnlen(EMU_STR(s), emu->mem_size - s);
+                if (d + dlen + slen + 1 <= emu->mem_size)
+                    memcpy(emu->mem + d + dlen, emu->mem + s, slen + 1);
+            }
+            break;
+        }
+        case STUB_STRTOL: {
+            uint32_t s = cpu->r[0]; int base = (int)cpu->r[2];
+            cpu->r[0] = (s < emu->mem_size) ? (uint32_t)strtol(EMU_STR(s), NULL, base) : 0;
+            break;
+        }
+        case STUB_STRTOK: {
+            uint32_t s = cpu->r[0], d = cpu->r[1];
+            /* strtok with emulated memory is tricky; simplified */
+            (void)s; (void)d;
+            cpu->r[0] = 0; break;
+        }
+        case STUB_STRERROR:
+            /* Return pointer to a static "error" string in emu memory */
+            cpu->r[0] = 0; break;
+        case STUB_STRTOULL: {
+            uint32_t s = cpu->r[0]; int base = (int)cpu->r[2];
+            uint64_t v = (s < emu->mem_size) ? strtoull(EMU_STR(s), NULL, base) : 0;
+            cpu->r[0] = (uint32_t)v; cpu->r[1] = (uint32_t)(v >> 32);
+            break;
+        }
+        case STUB_STRTOD: {
+            uint32_t s = cpu->r[0];
+            double v = (s < emu->mem_size) ? strtod(EMU_STR(s), NULL) : 0.0;
+            uint64_t bits; memcpy(&bits, &v, 8);
+            cpu->r[0] = (uint32_t)bits; cpu->r[1] = (uint32_t)(bits >> 32);
+            break;
+        }
+        case STUB_STRCASECMP: {
+            uint32_t a = cpu->r[0], b = cpu->r[1];
+#ifdef _WIN32
+            cpu->r[0] = (a < emu->mem_size && b < emu->mem_size)
+                ? (uint32_t)_stricmp(EMU_STR(a), EMU_STR(b)) : 1;
+#else
+            cpu->r[0] = (a < emu->mem_size && b < emu->mem_size)
+                ? (uint32_t)strcasecmp(EMU_STR(a), EMU_STR(b)) : 1;
+#endif
+            break;
+        }
+        case STUB_STRNCASECMP: {
+            uint32_t a = cpu->r[0], b = cpu->r[1], n = cpu->r[2];
+#ifdef _WIN32
+            cpu->r[0] = (a < emu->mem_size && b < emu->mem_size)
+                ? (uint32_t)_strnicmp(EMU_STR(a), EMU_STR(b), n) : 1;
+#else
+            cpu->r[0] = (a < emu->mem_size && b < emu->mem_size)
+                ? (uint32_t)strncasecmp(EMU_STR(a), EMU_STR(b), n) : 1;
+#endif
+            break;
+        }
+        case STUB_STRCOLL: {
+            uint32_t a = cpu->r[0], b = cpu->r[1];
+            cpu->r[0] = (a < emu->mem_size && b < emu->mem_size)
+                ? (uint32_t)strcoll(EMU_STR(a), EMU_STR(b)) : 0;
+            break;
+        }
+        case STUB_STRXFRM:
+            cpu->r[0] = 0; break;
+        case STUB_ATOI:
+            cpu->r[0] = (cpu->r[0] < emu->mem_size) ? (uint32_t)atoi(EMU_STR(cpu->r[0])) : 0;
+            break;
 
-        /* ---- stdio ---- */
+        /* ==================================================================
+         *  stdio
+         * ================================================================== */
         case STUB_PRINTF:
+        case STUB_FPRINTF:
         case STUB_SPRINTF:
-        case STUB_SNPRINTF: {
-            /* Simplified: just log the format string */
+        case STUB_SNPRINTF:
+        case STUB_VSNPRINTF:
+        case STUB_VSPRINTF: {
             uint32_t fmt_ptr = (stub_id == STUB_PRINTF) ? cpu->r[0] : cpu->r[1];
-            if (fmt_ptr < emu->mem_size)
-                fprintf(stdout, "[bionic] %s\n", (char*)emu->mem + fmt_ptr);
+            if (fmt_ptr < emu->mem_size) {
+#if defined(_MSC_VER)
+                OutputDebugStringA("[bionic] ");
+                OutputDebugStringA(EMU_STR(fmt_ptr));
+                OutputDebugStringA("\n");
+#else
+                fprintf(stdout, "[bionic] %s\n", EMU_STR(fmt_ptr));
+#endif
+            }
             cpu->r[0] = 0; break;
         }
         case STUB_PUTS: {
-            uint32_t ptr = cpu->r[0];
-            if (ptr < emu->mem_size)
-                puts((char*)emu->mem + ptr);
+            if (cpu->r[0] < emu->mem_size) puts(EMU_STR(cpu->r[0]));
             cpu->r[0] = 0; break;
         }
+        case STUB_FOPEN:
+        case STUB_FCLOSE:
+        case STUB_FREAD:
+        case STUB_FWRITE:
+        case STUB_FSEEK:
+        case STUB_FTELL:
+        case STUB_FGETS:
+        case STUB_FPUTS:
+        case STUB_FEOF:
+        case STUB_FERROR:
+        case STUB_FFLUSH:
+        case STUB_FSCANF:
+        case STUB_SSCANF:
+        case STUB_FPUTC:
+        case STUB_FDOPEN:
+        case STUB_SETVBUF:
+        case STUB_GETC:
+        case STUB_PUTC:
+        case STUB_UNGETC:
+        case STUB_PUTCHAR:
+            /* File I/O stubs - return 0/NULL for now.
+             * Real file operations go through syscalls (open/read/write). */
+            cpu->r[0] = 0; break;
 
-        /* ---- Process control ---- */
+        /* ==================================================================
+         *  Math functions (read float from r0, return float in r0)
+         * ================================================================== */
+        case STUB_SIN: case STUB_COS: case STUB_ATAN: case STUB_SQRT:
+        case STUB_CEIL: case STUB_FLOOR: case STUB_FMOD: case STUB_POW:
+        case STUB_ATAN2: case STUB_LDEXP: {
+            /* Double args in r0:r1 (and r2:r3 for 2-arg) */
+            double a, b = 0, result = 0;
+            uint64_t ab; memcpy(&ab, &cpu->r[0], 8); memcpy(&a, &ab, 8);
+            if (stub_id == STUB_ATAN2 || stub_id == STUB_POW || stub_id == STUB_FMOD || stub_id == STUB_LDEXP) {
+                uint64_t bb; memcpy(&bb, &cpu->r[2], 8); memcpy(&b, &bb, 8);
+            }
+            switch ((BionicStub)stub_id) {
+                case STUB_SIN:   result = sin(a); break;
+                case STUB_COS:   result = cos(a); break;
+                case STUB_ATAN:  result = atan(a); break;
+                case STUB_SQRT:  result = sqrt(a); break;
+                case STUB_CEIL:  result = ceil(a); break;
+                case STUB_FLOOR: result = floor(a); break;
+                case STUB_FMOD:  result = fmod(a, b); break;
+                case STUB_POW:   result = pow(a, b); break;
+                case STUB_ATAN2: result = atan2(a, b); break;
+                case STUB_LDEXP: result = ldexp(a, (int)cpu->r[2]); break;
+                default: break;
+            }
+            uint64_t rb; memcpy(&rb, &result, 8);
+            cpu->r[0] = (uint32_t)rb; cpu->r[1] = (uint32_t)(rb >> 32);
+            break;
+        }
+        case STUB_SINF: case STUB_COSF: case STUB_SQRTF: case STUB_POWF:
+        case STUB_CEILF: case STUB_FLOORF: case STUB_FMODF: case STUB_ATAN2F:
+        case STUB_MODFF: case STUB_LOGF: {
+            /* Float arg in r0, second in r1 for 2-arg */
+            float a, b = 0, result = 0;
+            memcpy(&a, &cpu->r[0], 4);
+            memcpy(&b, &cpu->r[1], 4);
+            switch ((BionicStub)stub_id) {
+                case STUB_SINF:   result = sinf(a); break;
+                case STUB_COSF:   result = cosf(a); break;
+                case STUB_SQRTF:  result = sqrtf(a); break;
+                case STUB_POWF:   result = powf(a, b); break;
+                case STUB_CEILF:  result = ceilf(a); break;
+                case STUB_FLOORF: result = floorf(a); break;
+                case STUB_FMODF:  result = fmodf(a, b); break;
+                case STUB_ATAN2F: result = atan2f(a, b); break;
+                case STUB_LOGF:   result = logf(a); break;
+                case STUB_MODFF:  { float ipart; result = modff(a, &ipart); /* simplified */ break; }
+                default: break;
+            }
+            memcpy(&cpu->r[0], &result, 4);
+            break;
+        }
+
+        /* ==================================================================
+         *  Time
+         * ================================================================== */
+        case STUB_GETTIMEOFDAY:
+        case STUB_TIME:
+        case STUB_USLEEP:
+        case STUB_NANOSLEEP:
+        case STUB_GMTIME:
+        case STUB_FTIME:
+        case STUB_STRFTIME:
+            /* Time operations are handled by syscalls; stubs return 0. */
+            cpu->r[0] = 0; break;
+
+        /* ==================================================================
+         *  Process
+         * ================================================================== */
         case STUB_ABORT:
             fprintf(stderr, "android: abort() called\n");
             emu->cpu.running = false;
-            emu->exit_code   = 134;
+            emu->exit_code = 134;
             break;
-
-        /* ---- Dynamic linking (return NULL - already linked) ---- */
-        case STUB_DLOPEN:
-        case STUB_DLSYM:
-        case STUB_DLCLOSE:
-        case STUB_DLERROR:
+        case STUB_GETPID:
+            cpu->r[0] = (uint32_t)emu->syscall_state.pid; break;
+        case STUB_RAISE:
+        case STUB_BSD_SIGNAL:
+            cpu->r[0] = 0; break;
+        case STUB_SYSCONF:
+            /* sysconf(_SC_PAGESIZE=0x27) -> 4096 */
+            cpu->r[0] = (cpu->r[0] == 0x27) ? 4096 : (uint32_t)-1;
+            break;
+        case STUB_SETLOCALE:
             cpu->r[0] = 0; break;
 
-        /* ---- Threads (no-op for single-threaded emulation) ---- */
+        /* ==================================================================
+         *  Dynamic linking
+         * ================================================================== */
+        case STUB_DLOPEN: case STUB_DLSYM: case STUB_DLCLOSE: case STUB_DLERROR:
+            cpu->r[0] = 0; break;
+
+        /* ==================================================================
+         *  pthread (single-threaded emulation: all return success / no-op)
+         * ================================================================== */
         case STUB_PTHREAD_CREATE:
         case STUB_PTHREAD_JOIN:
         case STUB_PTHREAD_MUTEX_LOCK:
         case STUB_PTHREAD_MUTEX_UNLOCK:
+        case STUB_PTHREAD_MUTEX_INIT:
+        case STUB_PTHREAD_MUTEX_DESTROY:
+        case STUB_PTHREAD_ATTR_INIT:
+        case STUB_PTHREAD_ATTR_DESTROY:
+        case STUB_PTHREAD_ATTR_SETDETACHSTATE:
+        case STUB_PTHREAD_ATTR_SETSCHEDPARAM:
+        case STUB_PTHREAD_ATTR_SETSTACKSIZE:
+        case STUB_PTHREAD_COND_INIT:
+        case STUB_PTHREAD_COND_DESTROY:
+        case STUB_PTHREAD_COND_WAIT:
+        case STUB_PTHREAD_COND_SIGNAL:
+        case STUB_PTHREAD_COND_BROADCAST:
+        case STUB_PTHREAD_COND_TIMEDWAIT:
+        case STUB_PTHREAD_DETACH:
+        case STUB_PTHREAD_KEY_CREATE:
+        case STUB_PTHREAD_KEY_DELETE:
+        case STUB_PTHREAD_GETSPECIFIC:
+        case STUB_PTHREAD_SETSPECIFIC:
+        case STUB_PTHREAD_ONCE:
+        case STUB_PTHREAD_MUTEXATTR_INIT:
+        case STUB_PTHREAD_MUTEXATTR_DESTROY:
+            cpu->r[0] = 0; break;
+        case STUB_PTHREAD_SELF:
+            cpu->r[0] = 1; break; /* fake thread id */
+        case STUB_PTHREAD_EQUAL:
+            cpu->r[0] = (cpu->r[0] == cpu->r[1]) ? 1 : 0; break;
+
+        /* ==================================================================
+         *  POSIX file I/O (libc wrappers → delegate to syscall layer)
+         * ================================================================== */
+        case STUB_OPEN_POSIX:
+        case STUB_CLOSE_POSIX:
+        case STUB_READ_POSIX:
+        case STUB_WRITE_POSIX:
+        case STUB_LSEEK_POSIX:
+        case STUB_FCNTL:
+        case STUB_PIPE:
+        case STUB_REMOVE:
+        case STUB_RENAME:
+        case STUB_MKDIR:
+        case STUB_ACCESS:
+        case STUB_OPENDIR:
+        case STUB_READDIR:
+        case STUB_CLOSEDIR:
+        case STUB_FSTAT:
+        case STUB_WRITEV:
+        case STUB_POLL:
+        case STUB_IOCTL:
+        case STUB_SELECT:
+            /* These are normally called via syscall; libc stubs return -1/0 */
+            cpu->r[0] = (uint32_t)-1; break;
+
+        /* ==================================================================
+         *  Network (stubs - no real networking in emulator)
+         * ================================================================== */
+        case STUB_SOCKET:
+        case STUB_BIND:
+        case STUB_LISTEN:
+        case STUB_ACCEPT:
+        case STUB_CONNECT:
+        case STUB_SEND:
+        case STUB_RECV:
+        case STUB_SENDTO:
+        case STUB_RECVFROM:
+        case STUB_SETSOCKOPT:
+        case STUB_GETSOCKOPT:
+        case STUB_GETSOCKNAME:
+        case STUB_GETHOSTBYNAME:
+        case STUB_GETHOSTNAME:
+        case STUB_INET_NTOA:
+        case STUB_INET_ADDR:
+        case STUB_SHUTDOWN:
+            cpu->r[0] = (uint32_t)-1; break;
+
+        /* ==================================================================
+         *  zlib (stubs - return error codes)
+         * ================================================================== */
+        case STUB_DEFLATEINIT:
+        case STUB_DEFLATEEND:
+        case STUB_DEFLATE:
+        case STUB_INFLATEINIT:
+        case STUB_INFLATEEND:
+        case STUB_INFLATE:
+        case STUB_DEFLATEINIT2:
+        case STUB_UNCOMPRESS:
+            cpu->r[0] = (uint32_t)-2; /* Z_STREAM_ERROR */ break;
+
+        /* ==================================================================
+         *  Random
+         * ================================================================== */
+        case STUB_LRAND48:
+            cpu->r[0] = (uint32_t)(rand() & 0x7FFFFFFF); break;
+        case STUB_SRAND48:
+            srand((unsigned)cpu->r[0]); cpu->r[0] = 0; break;
+        case STUB_DIV: {
+            int32_t num = (int32_t)cpu->r[0], den = (int32_t)cpu->r[1];
+            if (den != 0) { cpu->r[0] = (uint32_t)(num / den); cpu->r[1] = (uint32_t)(num % den); }
+            else { cpu->r[0] = 0; cpu->r[1] = 0; }
+            break;
+        }
+
+        /* ==================================================================
+         *  Wide char (stubs)
+         * ================================================================== */
+        case STUB_WCSLEN: {
+            /* wchar_t is 4 bytes on ARM Linux */
+            uint32_t p = cpu->r[0]; uint32_t len = 0;
+            if (p < emu->mem_size) {
+                while (p + 4 <= emu->mem_size) {
+                    uint32_t c; memcpy(&c, emu->mem + p, 4);
+                    if (c == 0) break;
+                    p += 4; len++;
+                }
+            }
+            cpu->r[0] = len; break;
+        }
+        case STUB_WMEMCHR: case STUB_WMEMCPY: case STUB_WMEMSET:
+        case STUB_WMEMMOVE: case STUB_WMEMCMP:
+        case STUB_PUTWC: case STUB_GETWC: case STUB_UNGETWC:
+        case STUB_WCRTOMB: case STUB_MBRTOWC:
+        case STUB_WCSCOLL: case STUB_WCSXFRM: case STUB_WCSFTIME:
+        case STUB_WCTYPE: case STUB_TOWUPPER: case STUB_TOWLOWER:
+        case STUB_ISWCTYPE: case STUB_WCTOB: case STUB_BTOWC:
             cpu->r[0] = 0; break;
 
+        /* ==================================================================
+         *  Bionic / Android internals
+         * ================================================================== */
+        case STUB___ERRNO:
+            /* Return pointer to an errno location in emulated memory.
+             * We reserve a small area at DATA_SYMBOL_BASE for this. */
+            cpu->r[0] = DATA_SYMBOL_BASE; break;
+        case STUB___STACK_CHK_FAIL:
+            fprintf(stderr, "android: __stack_chk_fail() - stack corruption detected\n");
+            emu->cpu.running = false;
+            emu->exit_code = 134;
+            break;
+        case STUB___CXA_ATEXIT:
+        case STUB___CXA_FINALIZE:
+            cpu->r[0] = 0; break;
+        case STUB___ANDROID_LOG_PRINT: {
+            /* __android_log_print(priority, tag, fmt, ...) */
+            uint32_t tag = cpu->r[1], fmt = cpu->r[2];
+            if (tag < emu->mem_size && fmt < emu->mem_size) {
+#if defined(_MSC_VER)
+                char buf[512];
+                snprintf(buf, sizeof(buf), "[%s] %s\n", EMU_STR(tag), EMU_STR(fmt));
+                OutputDebugStringA(buf);
+#else
+                fprintf(stderr, "[%s] %s\n", EMU_STR(tag), EMU_STR(fmt));
+#endif
+            }
+            cpu->r[0] = 0; break;
+        }
+        case STUB_SYSCALL:
+            /* libc syscall() wrapper: syscall number in r0, args shifted */
+            cpu->r[7] = cpu->r[0]; /* move syscall nr to r7 */
+            cpu->r[0] = cpu->r[1]; cpu->r[1] = cpu->r[2];
+            cpu->r[2] = cpu->r[3]; /* shift args */
+            android_syscall_dispatch(cpu, &emu->syscall_state, 0);
+            break;
+
+        /* ==================================================================
+         *  OpenGL ES 1.x / GLES (all no-op stubs for now)
+         *  The guest app calls these through the emulated EGL/GL.
+         *  We log but don't execute real GL calls since the host
+         *  rendering is handled separately by angle_renderer.
+         * ================================================================== */
+        case STUB_GLENABLE: case STUB_GLDISABLE: case STUB_GLCLEAR:
+        case STUB_GLCLEARCOLOR: case STUB_GLVIEWPORT: case STUB_GLSCISSOR:
+        case STUB_GLMATRIXMODE: case STUB_GLLOADIDENTITY:
+        case STUB_GLPUSHMATRIX: case STUB_GLPOPMATRIX:
+        case STUB_GLTRANSLATEF: case STUB_GLSCALEF: case STUB_GLROTATEF:
+        case STUB_GLORTHOF: case STUB_GLMULTMATRIXF:
+        case STUB_GLCOLOR4F: case STUB_GLBLENDFUNC:
+        case STUB_GLDEPTHFUNC: case STUB_GLDEPTHMASK: case STUB_GLDEPTHRANGEF:
+        case STUB_GLALPHAFUNC: case STUB_GLCULLFACE: case STUB_GLSHADEMODEL:
+        case STUB_GLENABLECLIENTSTATE: case STUB_GLDISABLECLIENTSTATE:
+        case STUB_GLHINT: case STUB_GLSTENCILFUNC: case STUB_GLSTENCILMASK:
+        case STUB_GLSTENCILOP: case STUB_GLLIGHTMODELF: case STUB_GLLIGHTFV:
+        case STUB_GLPOLYGONOFFSET: case STUB_GLLINEWIDTH: case STUB_GLCOLORMASK:
+        case STUB_GLFOGF: case STUB_GLFOGFV: case STUB_GLFOGX:
+        case STUB_GLBINDTEXTURE: case STUB_GLGENTEXTURES: case STUB_GLDELETETEXTURES:
+        case STUB_GLTEXIMAGE2D: case STUB_GLTEXSUBIMAGE2D: case STUB_GLTEXPARAMETERI:
+        case STUB_GLVERTEXPOINTER: case STUB_GLTEXCOORDPOINTER:
+        case STUB_GLCOLORPOINTER: case STUB_GLNORMALPOINTER:
+        case STUB_GLBINDBUFFER: case STUB_GLGENBUFFERS: case STUB_GLDELETEBUFFERS:
+        case STUB_GLBUFFERDATA: case STUB_GLDRAWARRAYS: case STUB_GLDRAWELEMENTS:
+        case STUB_GLREADPIXELS:
+            cpu->r[0] = 0; break;
+        case STUB_GLGETERROR:
+            cpu->r[0] = 0; break; /* GL_NO_ERROR */
+        case STUB_GLGETSTRING:
+            /* Return 0 (NULL) for now; guest should handle gracefully */
+            cpu->r[0] = 0; break;
+        case STUB_GLGETFLOATV:
+            cpu->r[0] = 0; break;
+
+        /* ==================================================================
+         *  EGL (stub implementations matching referenceCode/apkenv pattern)
+         * ================================================================== */
+        case STUB_EGLGETDISPLAY:
+            cpu->r[0] = 0xC00FA15Eu; break; /* fake display handle */
+        case STUB_EGLINITIALIZE:
+            cpu->r[0] = 1; break; /* EGL_TRUE */
+        case STUB_EGLCHOOSECONFIG:
+            /* Write num_config = 1 */
+            if (cpu->r[4] && cpu->r[4] + 4 <= emu->mem_size) {
+                uint32_t one = 1; memcpy(emu->mem + cpu->r[4], &one, 4);
+            }
+            cpu->r[0] = 1; break;
+        case STUB_EGLGETCONFIGATTRIB:
+            cpu->r[0] = 1; break;
+        case STUB_EGLCREATEWINDOWSURFACE:
+            cpu->r[0] = 0xCAFEBABEu; break; /* fake surface */
+        case STUB_EGLCREATECONTEXT:
+            cpu->r[0] = 0xF00DFACEu; break; /* fake context */
+        case STUB_EGLMAKECURRENT:
+            cpu->r[0] = 1; break;
+        case STUB_EGLQUERYSURFACE:
+            cpu->r[0] = 1; break;
+        case STUB_EGLSWAPBUFFERS:
+            cpu->r[0] = 1; break;
+        case STUB_EGLSWAPINTERVAL:
+            cpu->r[0] = 1; break;
+        case STUB_EGLGETCURRENTDISPLAY:
+            cpu->r[0] = 0xC00FA15Eu; break;
+        case STUB_EGLDESTROYCONTEXT:
+        case STUB_EGLDESTROYSURFACE:
+        case STUB_EGLTERMINATE:
+            cpu->r[0] = 1; break;
+
+        /* ==================================================================
+         *  Android NDK (stub implementations)
+         * ================================================================== */
+        case STUB_AASSETMANAGER_OPEN:
+        case STUB_AASSET_GETLENGTH:
+        case STUB_AASSET_GETBUFFER:
+        case STUB_AASSET_CLOSE:
+            cpu->r[0] = 0; break;
+        case STUB_AINPUTEVENT_GETTYPE:
+        case STUB_AKEYEVENT_GETACTION:
+        case STUB_AKEYEVENT_GETKEYCODE:
+        case STUB_AKEYEVENT_GETMETASTATE:
+        case STUB_AINPUTEVENT_GETDEVICEID:
+        case STUB_AKEYEVENT_GETREPEATCOUNT:
+        case STUB_AINPUTEVENT_GETSOURCE:
+        case STUB_AMOTIONEVENT_GETACTION:
+        case STUB_AMOTIONEVENT_GETPOINTERID:
+        case STUB_AMOTIONEVENT_GETX:
+        case STUB_AMOTIONEVENT_GETY:
+        case STUB_AMOTIONEVENT_GETPOINTERCOUNT:
+            cpu->r[0] = 0; break;
+        case STUB_AINPUTQUEUE_GETEVENT:
+            cpu->r[0] = (uint32_t)-1; break; /* no event */
+        case STUB_AINPUTQUEUE_FINISHEVENT:
+        case STUB_AINPUTQUEUE_PREDISPATCHEVENT:
+        case STUB_AINPUTQUEUE_ATTACHLOOPER:
+        case STUB_AINPUTQUEUE_DETACHLOOPER:
+            cpu->r[0] = 0; break;
+        case STUB_ALOOPER_POLLALL:
+            cpu->r[0] = (uint32_t)-1; break; /* ALOOPER_POLL_TIMEOUT (no events) */
+        case STUB_ALOOPER_PREPARE:
+            cpu->r[0] = 0xA100BE50u; break; /* fake looper handle */
+        case STUB_ALOOPER_ADDFD:
+            cpu->r[0] = 1; break;
+        case STUB_ANATIVEACTIVITY_FINISH:
+            emu->cpu.running = false;
+            emu->exit_code = 0;
+            break;
+        case STUB_ANATIVEWINDOW_SETBUFFERSGEOMETRY:
+            cpu->r[0] = 0; break;
+        case STUB_ACONFIGURATION_NEW:
+            /* Allocate a small block for the config struct */
+            {
+                uint32_t base = emu->syscall_state.brk_current;
+                uint32_t sz = 64;
+                if (base + sz <= emu->syscall_state.brk_max) {
+                    memset(emu->mem + base, 0, sz);
+                    emu->syscall_state.brk_current += sz;
+                    cpu->r[0] = base;
+                } else { cpu->r[0] = 0; }
+            }
+            break;
+        case STUB_ACONFIGURATION_FROMASSETMANAGER:
+            cpu->r[0] = 0; break;
+        case STUB_ACONFIGURATION_GETLANGUAGE:
+            /* Write "en" to the buffer in r1 */
+            if (cpu->r[1] + 3 <= emu->mem_size) {
+                emu->mem[cpu->r[1]] = 'e';
+                emu->mem[cpu->r[1]+1] = 'n';
+                emu->mem[cpu->r[1]+2] = '\0';
+            }
+            cpu->r[0] = 0; break;
+        case STUB_ACONFIGURATION_GETCOUNTRY:
+            if (cpu->r[1] + 3 <= emu->mem_size) {
+                emu->mem[cpu->r[1]] = 'U';
+                emu->mem[cpu->r[1]+1] = 'S';
+                emu->mem[cpu->r[1]+2] = '\0';
+            }
+            cpu->r[0] = 0; break;
+        case STUB_ACONFIGURATION_DELETE:
+            cpu->r[0] = 0; break;
+
+        /* ==================================================================
+         *  OpenSL ES (audio stub)
+         * ================================================================== */
+        case STUB_SLCREATEENGINE:
+            cpu->r[0] = (uint32_t)-1; break; /* SL_RESULT_INTERNAL_ERROR */
+
+        /* ==================================================================
+         *  Default
+         * ================================================================== */
         default:
-            fprintf(stderr, "android_emulator: unknown bionic stub %u\n", stub_id);
+            fprintf(stderr, "android_emulator: unknown bionic stub %u (%s)\n",
+                    stub_id, (stub_id < STUB_COUNT && stub_names[stub_id]) ? stub_names[stub_id] : "?");
             cpu->r[0] = 0; break;
     }
+#undef EMU_STR
+#undef EMU_PTR
+#undef BOUNDS_OK
 }
 
 /* Combined SWI dispatcher: bionic stubs have IDs < STUB_COUNT */
@@ -557,6 +1490,69 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     }
     EMU_LOG_DEBUG("init: installed %u bionic stubs (%s encoding)",
                   STUB_COUNT - 1, emu->is_arm64 ? "A64" : "Thumb");
+
+    /* Install data symbols: these are not trampolines but reserved memory
+     * locations that native code reads as global variables. */
+    {
+        uint32_t dbase = DATA_SYMBOL_BASE;
+
+        /* __stack_chk_guard: stack canary value (4 bytes) */
+        uint32_t canary = 0x00000FFL; /* non-zero canary */
+        memcpy(emu->mem + dbase, &canary, 4);
+        android_linker_add_override(&emu->linker, "__stack_chk_guard", dbase);
+        dbase += DATA_SYMBOL_STRIDE;
+
+        /* _tolower_tab_: 256+1 byte array for tolower */
+        for (int i = 0; i <= 256; i++) {
+            int c = (i < 256) ? i : 0;
+            emu->mem[dbase + i] = (uint8_t)((c >= 'A' && c <= 'Z') ? c + 32 : c);
+        }
+        android_linker_add_override(&emu->linker, "_tolower_tab_", dbase);
+        dbase += 512;
+
+        /* _ctype_: 256+1 byte ctype classification table */
+        memset(emu->mem + dbase, 0, 257);
+        for (int i = 0; i < 256; i++) {
+            uint8_t flags = 0;
+            if (i >= 'A' && i <= 'Z') flags |= 0x01; /* _U */
+            if (i >= 'a' && i <= 'z') flags |= 0x02; /* _L */
+            if (i >= '0' && i <= '9') flags |= 0x04; /* _N */
+            if (i == ' ' || i == '\t' || i == '\n' || i == '\r' || i == '\f' || i == '\v') flags |= 0x08; /* _S */
+            if (i >= 0x20 && i <= 0x7E) flags |= 0x10; /* _P (printable) */
+            if (i < 0x20 || i == 0x7F) flags |= 0x20; /* _C (control) */
+            emu->mem[dbase + 1 + i] = flags; /* offset by 1 for EOF=-1 indexing */
+        }
+        android_linker_add_override(&emu->linker, "_ctype_", dbase);
+        dbase += 512;
+
+        /* __sF: stdio FILE structures (3 entries: stdin, stdout, stderr)
+         * Each Android FILE is 0x54 bytes (NDK struct). Zero them out. */
+        memset(emu->mem + dbase, 0, 0x54 * 3);
+        android_linker_add_override(&emu->linker, "__sF", dbase);
+        dbase += 0x54 * 3 + 16;
+
+        /* __gnu_Unwind_Find_exidx: ARM exception table lookup.
+         * We install a stub that returns 0 (no exception tables). */
+        {
+            uint32_t stub_va = BIONIC_STUB_BASE + STUB_COUNT * BIONIC_STUB_STRIDE;
+            /* Install a simple trampoline that returns 0 in r0 */
+            uint16_t mov_r0_0 = 0x2000; /* MOV r0, #0 */
+            uint16_t bx_lr    = 0x4770;  /* BX LR */
+            memcpy(emu->mem + stub_va, &mov_r0_0, 2);
+            memcpy(emu->mem + stub_va + 2, &bx_lr, 2);
+            android_linker_add_override(&emu->linker, "__gnu_Unwind_Find_exidx",
+                                        emu->is_arm64 ? stub_va : (stub_va | 1u));
+        }
+
+        /* SL_IID_* OpenSL ES interface IDs (16-byte UUIDs each, all zeros = stub) */
+        memset(emu->mem + dbase, 0, 16 * 4);
+        android_linker_add_override(&emu->linker, "SL_IID_ENGINE",      dbase);
+        android_linker_add_override(&emu->linker, "SL_IID_PLAY",        dbase + 16);
+        android_linker_add_override(&emu->linker, "SL_IID_VOLUME",      dbase + 32);
+        android_linker_add_override(&emu->linker, "SL_IID_BUFFERQUEUE", dbase + 48);
+        dbase += 16 * 4;
+    }
+    EMU_LOG_DEBUG("init: installed data symbols");
 
     /* Load all native libraries into emulated memory */
     unsigned loaded_count = 0;
