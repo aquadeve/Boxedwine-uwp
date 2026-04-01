@@ -96,7 +96,11 @@ extern "C" int SDL_main(int argc, char* argv[])
     AndroidEmulatorConfig config = {};
     config.screen_width = 1280;
     config.screen_height = 720;
+#if defined(_DEBUG)
+    config.verbosity = 3;  /* Maximum verbosity in debug builds */
+#else
     config.verbosity = 2;
+#endif
     config.apk_path = nullptr;
     config.main_lib = nullptr;
     config.data_dir = nullptr;
@@ -227,7 +231,13 @@ extern "C" int SDL_main(int argc, char* argv[])
     float virtual_cursor_y = config.screen_height / 2.0f;
 
     AndroidEmulator* emu = new AndroidEmulator{};
+#if defined(_DEBUG)
+    SDL_Log("[EMU DEBUG] main: calling android_emulator_init (apk='%s')", config.apk_path);
+#endif
     if (!android_emulator_init(emu, &config)) {
+#if defined(_DEBUG)
+        SDL_Log("[EMU DEBUG] main: android_emulator_init FAILED");
+#endif
         SDL_ShowSimpleMessageBox(
             SDL_MESSAGEBOX_ERROR,
             "Boxedwine Android",

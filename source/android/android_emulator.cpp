@@ -39,6 +39,16 @@
 #include <string.h>
 
 /* -------------------------------------------------------------------------
+ * Debug logging macro: active in debug builds (_DEBUG defined by MSVC,
+ * or NDEBUG *not* defined on GCC/Clang).
+ * ---------------------------------------------------------------------- */
+#if defined(_DEBUG) || !defined(NDEBUG)
+#define EMU_LOG_DEBUG(fmt, ...) fprintf(stderr, "[EMU DEBUG] " fmt "\n", ##__VA_ARGS__)
+#else
+#define EMU_LOG_DEBUG(fmt, ...) ((void)0)
+#endif
+
+/* -------------------------------------------------------------------------
  * SWI handler called from the ARMv7 CPU interpreter
  * ---------------------------------------------------------------------- */
 static void swi_handler(void *ctx, uint32_t swi_num) {
@@ -468,66 +478,100 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     memset(emu, 0, sizeof(*emu));
     emu->config = *config;
 
+    EMU_LOG_DEBUG("init: starting (apk=%s, screen=%dx%d, verbosity=%d)",
+                  config->apk_path ? config->apk_path : "(null)",
+                  config->screen_width, config->screen_height, config->verbosity);
+
     /* Allocate emulated address space */
     emu->mem_size = ANDROID_MEM_SIZE;
     emu->mem = (uint8_t*)calloc(1, emu->mem_size);
     if (!emu->mem) {
         fprintf(stderr, "android_emulator: failed to allocate %u MB of emulated memory\n",
                 ANDROID_MEM_SIZE / (1024*1024));
+        EMU_LOG_DEBUG("init: FAILED — memory allocation (%u MB)", ANDROID_MEM_SIZE / (1024*1024));
         return false;
     }
+    EMU_LOG_DEBUG("init: allocated %u MB emulated memory at %p",
+                  ANDROID_MEM_SIZE / (1024*1024), (void*)emu->mem);
 
     /* Initialise subsystems */
     android_syscall_init(&emu->syscall_state, emu->mem, emu->mem_size);
     android_jni_init(&emu->jni);
     android_linker_init(&emu->linker, emu->mem, emu->mem_size, ANDROID_LOAD_BASE);
+    EMU_LOG_DEBUG("init: subsystems initialised (syscall, jni, linker)");
 
-    /* Detect ABI: arm64-v8a → AArch64, everything else → ARMv7 */
+    /* Load the APK — must happen BEFORE ABI detection and stub installation */
+    EMU_LOG_DEBUG("init: opening APK '%s'", config->apk_path ? config->apk_path : "(null)");
+    if (!apk_open(config->apk_path, &emu->apk)) {
+        fprintf(stderr, "android_emulator: failed to open APK: %s\n",
+                config->apk_path ? config->apk_path : "(null)");
+        EMU_LOG_DEBUG("init: FAILED — apk_open returned false");
+        return false;
+    }
+    EMU_LOG_DEBUG("init: APK opened (abi='%s', libs=%u, pkg='%s')",
+                  emu->apk.target_abi, emu->apk.lib_count, emu->apk.package_name);
+
+    if (config->verbosity >= 1)
+        fprintf(stdout, "android_emulator: loaded APK '%s' (%s), %u native lib(s)\n",
+                config->apk_path, emu->apk.target_abi, emu->apk.lib_count);
+
+    /* Detect ABI: arm64-v8a -> AArch64, everything else -> ARMv7 */
     emu->is_arm64 = (strcmp(emu->apk.target_abi, "arm64-v8a") == 0);
+    EMU_LOG_DEBUG("init: ABI='%s' -> %s mode", emu->apk.target_abi,
+                  emu->is_arm64 ? "AArch64" : "ARMv7");
 
     /* Install bionic stubs (encoding depends on target ABI) */
     for (unsigned i = 1; i < STUB_COUNT; i++) {
         uint32_t stub_va = BIONIC_STUB_BASE + i * BIONIC_STUB_STRIDE;
         if (emu->is_arm64) {
             install_stub_a64(emu->mem, stub_va, i);
-            /* AArch64 doesn't use Thumb bit; register plain VA */
             android_linker_add_override(&emu->linker, stub_names[i], stub_va);
         } else {
             install_stub(emu->mem, stub_va, i);
-            /* Register as Thumb address (set bit 0) for BX/BLX */
             android_linker_add_override(&emu->linker, stub_names[i], stub_va | 1u);
         }
     }
-
-    /* Load the APK */
-    if (!apk_open(config->apk_path, &emu->apk)) {
-        fprintf(stderr, "android_emulator: failed to open APK: %s\n", config->apk_path);
-        return false;
-    }
-
-    if (config->verbosity >= 1)
-        fprintf(stdout, "android_emulator: loaded APK '%s' (%s), %u native lib(s)\n",
-                config->apk_path, emu->apk.target_abi, emu->apk.lib_count);
+    EMU_LOG_DEBUG("init: installed %u bionic stubs (%s encoding)",
+                  STUB_COUNT - 1, emu->is_arm64 ? "A64" : "Thumb");
 
     /* Load all native libraries into emulated memory */
+    unsigned loaded_count = 0;
     for (unsigned i = 0; i < emu->apk.lib_count; i++) {
         const ApkLibEntry *lib = &emu->apk.libs[i];
+        EMU_LOG_DEBUG("init: loading lib[%u] '%s' (%zu bytes)", i, lib->name, lib->size);
         int idx = android_linker_load(&emu->linker, lib->name, lib->data, lib->size);
         if (idx < 0) {
             fprintf(stderr, "android_emulator: failed to load %s\n", lib->name);
-        } else if (config->verbosity >= 2) {
-            fprintf(stdout, "android_emulator: loaded %s at VA 0x%08X\n",
-                    lib->name, emu->linker.libs[idx].load_base);
+            EMU_LOG_DEBUG("init: FAILED to load '%s'", lib->name);
+        } else {
+            loaded_count++;
+            if (config->verbosity >= 2) {
+                fprintf(stdout, "android_emulator: loaded %s at VA 0x%08X\n",
+                        lib->name, emu->linker.libs[idx].load_base);
+            }
+            EMU_LOG_DEBUG("init: loaded '%s' at VA 0x%08X (idx=%d)",
+                          lib->name, emu->linker.libs[idx].load_base, idx);
         }
     }
+    EMU_LOG_DEBUG("init: loaded %u/%u native libraries", loaded_count, emu->apk.lib_count);
 
-    /* Resolve relocations */
-    if (!android_linker_relocate_all(&emu->linker)) {
-        fprintf(stderr, "android_emulator: relocation failed\n");
+    if (loaded_count == 0 && emu->apk.lib_count > 0) {
+        fprintf(stderr, "android_emulator: all %u native libraries failed to load\n", emu->apk.lib_count);
+        EMU_LOG_DEBUG("init: FAILED — zero libraries loaded");
         return false;
     }
 
+    /* Resolve relocations */
+    EMU_LOG_DEBUG("init: starting relocations for %u libraries", emu->linker.lib_count);
+    if (!android_linker_relocate_all(&emu->linker)) {
+        fprintf(stderr, "android_emulator: relocation failed\n");
+        EMU_LOG_DEBUG("init: FAILED at relocation");
+        return false;
+    }
+    EMU_LOG_DEBUG("init: relocations complete");
+
     /* Initialise CPU based on detected ABI */
+    EMU_LOG_DEBUG("init: initialising %s CPU", emu->is_arm64 ? "AArch64" : "ARMv7");
     if (emu->is_arm64) {
         aarch64_init(&emu->cpu64);
         emu->cpu64.callback_ctx     = emu;
@@ -585,6 +629,7 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
 
     if (!entry) {
         fprintf(stderr, "android_emulator: no entry point found\n");
+        EMU_LOG_DEBUG("init: FAILED — no entry point found in any library");
         return false;
     }
 
@@ -626,6 +671,7 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
 
     emu->initialised = true;
     emu->running     = true;
+    EMU_LOG_DEBUG("init: SUCCESS — emulator initialised and ready to run");
     return true;
 }
 

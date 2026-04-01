@@ -17,6 +17,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/* Debug logging macro — active in debug builds */
+#if defined(_DEBUG) || !defined(NDEBUG)
+#define LNK_LOG_DEBUG(fmt, ...) fprintf(stderr, "[LNK DEBUG] " fmt "\n", ##__VA_ARGS__)
+#else
+#define LNK_LOG_DEBUG(fmt, ...) ((void)0)
+#endif
+
 /* -------------------------------------------------------------------------
  * Helpers
  * ---------------------------------------------------------------------- */
@@ -85,17 +92,27 @@ void android_linker_add_override(LinkerContext *ctx, const char *name, uint32_t 
 
 int android_linker_load(LinkerContext *ctx, const char *name,
                         const uint8_t *elf_data, size_t elf_size) {
-    if (ctx->lib_count >= ANDROID_LINKER_MAX_LIBS) return -1;
-    if (elf_size < 16) return -1;
+    LNK_LOG_DEBUG("load: '%s' (%zu bytes), lib_count=%u", name, elf_size, ctx->lib_count);
+    if (ctx->lib_count >= ANDROID_LINKER_MAX_LIBS) {
+        LNK_LOG_DEBUG("load: FAILED — max libs (%d) reached", ANDROID_LINKER_MAX_LIBS);
+        return -1;
+    }
+    if (elf_size < 16) {
+        LNK_LOG_DEBUG("load: FAILED — elf_size %zu too small", elf_size);
+        return -1;
+    }
 
     /* Validate ELF magic */
     if (elf_data[0] != 0x7F || elf_data[1] != 'E' ||
         elf_data[2] != 'L'  || elf_data[3] != 'F') {
         fprintf(stderr, "android_linker: %s: bad ELF magic\n", name);
+        LNK_LOG_DEBUG("load: FAILED — bad ELF magic (0x%02X%02X%02X%02X)",
+                      elf_data[0], elf_data[1], elf_data[2], elf_data[3]);
         return -1;
     }
 
     bool elf64 = is_elf64(elf_data);
+    LNK_LOG_DEBUG("load: '%s' is %s ELF", name, elf64 ? "ELF64" : "ELF32");
 
     /* Validate machine type */
     if (elf64) {
@@ -286,6 +303,8 @@ int android_linker_load(LinkerContext *ctx, const char *name,
         if (ehdr->e_entry) lib->entry_va = load_base + (ehdr->e_entry - min_va);
     }
 
+    LNK_LOG_DEBUG("load: '%s' loaded at VA 0x%08X, size=0x%X, entry=0x%08X",
+                  name, load_base, total_size, lib->entry_va);
     return (int)ctx->lib_count++;
 }
 
@@ -479,8 +498,10 @@ static bool apply_relocations64(LinkerContext *ctx, LoadedLib *lib,
 
 bool android_linker_relocate_all(LinkerContext *ctx) {
     bool ok = true;
+    LNK_LOG_DEBUG("relocate_all: processing %u libraries", ctx->lib_count);
     for (unsigned i = 0; i < ctx->lib_count; i++) {
         LoadedLib *lib = &ctx->libs[i];
+        LNK_LOG_DEBUG("relocate_all: lib[%u] '%s' (elf64=%d)", i, lib->name, lib->is_elf64);
 
         if (lib->is_elf64) {
             if (lib->rela && lib->rela_count)
@@ -494,6 +515,7 @@ bool android_linker_relocate_all(LinkerContext *ctx) {
                 ok = apply_relocations(ctx, lib, lib->plt_rel, lib->plt_rel_count) && ok;
         }
     }
+    LNK_LOG_DEBUG("relocate_all: finished, result=%s", ok ? "OK" : "FAILED");
     return ok;
 }
 

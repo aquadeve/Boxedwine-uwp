@@ -19,6 +19,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/* Debug logging macro — active in debug builds */
+#if defined(_DEBUG) || !defined(NDEBUG)
+#define APK_LOG_DEBUG(fmt, ...) fprintf(stderr, "[APK DEBUG] " fmt "\n", ##__VA_ARGS__)
+#else
+#define APK_LOG_DEBUG(fmt, ...) ((void)0)
+#endif
+
 /* Minizip is in lib/zlib/contrib/minizip/ */
 #include "../../lib/zlib/contrib/minizip/unzip.h"
 
@@ -63,9 +70,15 @@ bool apk_open(const char *path, ApkDescriptor *desc) {
     memset(desc, 0, sizeof(*desc));
     snprintf(desc->apk_path, APK_MAX_PATH, "%s", path);
 
+    APK_LOG_DEBUG("apk_open: opening '%s'", path ? path : "(null)");
+
     unzFile zip = unzOpen(path);
-    if (!zip) return false;
+    if (!zip) {
+        APK_LOG_DEBUG("apk_open: FAILED — unzOpen returned NULL for '%s'", path ? path : "(null)");
+        return false;
+    }
     desc->zip_handle = zip;
+    APK_LOG_DEBUG("apk_open: ZIP opened successfully");
 
     /* ABI preference order: arm64-v8a > armeabi-v7a > armeabi > x86 */
     const char *abi_list[] = { "arm64-v8a", "armeabi-v7a", "armeabi", "x86", NULL };
@@ -73,6 +86,7 @@ bool apk_open(const char *path, ApkDescriptor *desc) {
 
     /* First pass: find which ABI is present */
     for (int ai = 0; abi_list[ai] && !chosen_abi; ai++) {
+        APK_LOG_DEBUG("apk_open: probing ABI '%s'", abi_list[ai]);
         char probe[128];
         snprintf(probe, sizeof(probe), "lib/%s/", abi_list[ai]);
         if (unzLocateFile(zip, probe, 0) == UNZ_OK ||
@@ -93,7 +107,12 @@ bool apk_open(const char *path, ApkDescriptor *desc) {
         }
     }
 
-    if (!chosen_abi) chosen_abi = "armeabi-v7a"; /* default / empty */
+    if (!chosen_abi) {
+        chosen_abi = "armeabi-v7a"; /* default / empty */
+        APK_LOG_DEBUG("apk_open: no ABI-specific libs found, defaulting to '%s'", chosen_abi);
+    } else {
+        APK_LOG_DEBUG("apk_open: chose ABI '%s'", chosen_abi);
+    }
     snprintf(desc->target_abi, sizeof(desc->target_abi), "%s", chosen_abi);
 
     /* Second pass: extract native libraries and manifest */
@@ -111,7 +130,10 @@ bool apk_open(const char *path, ApkDescriptor *desc) {
             ApkLibEntry *e = &desc->libs[desc->lib_count];
             snprintf(e->name, APK_MAX_PATH, "%s", basename_of(entry_name));
             if (zip_read_entry(zip, &e->data, &e->size)) {
+                APK_LOG_DEBUG("apk_open: extracted lib '%s' (%zu bytes)", e->name, e->size);
                 desc->lib_count++;
+            } else {
+                APK_LOG_DEBUG("apk_open: FAILED to extract '%s'", entry_name);
             }
         }
 
@@ -136,6 +158,8 @@ bool apk_open(const char *path, ApkDescriptor *desc) {
             desc->package_name[len - 4] = '\0';
     }
 
+    APK_LOG_DEBUG("apk_open: result — libs=%u, manifest=%s, package='%s'",
+                  desc->lib_count, desc->manifest_data ? "yes" : "no", desc->package_name);
     return desc->lib_count > 0 || desc->manifest_data != NULL;
 }
 
