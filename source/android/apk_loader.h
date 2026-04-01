@@ -62,7 +62,7 @@ typedef struct {
     /* Package name extracted from AndroidManifest.xml */
     char package_name[APK_MAX_PATH];
 
-    /* Target ABI preference (armeabi-v7a or armeabi) */
+    /* Target ABI preference (arm64-v8a, armeabi-v7a, armeabi, or x86) */
     char target_abi[32];
 
     /* Native libraries */

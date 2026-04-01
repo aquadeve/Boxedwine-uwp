@@ -29,6 +29,7 @@
 #include "android_jni.h"
 #include "android_syscall.h"
 #include "../emulation/cpu/arm/armv7_interpreter.h"
+#include "../emulation/cpu/arm/aarch64_interpreter.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,8 +79,14 @@ typedef struct {
     /* Syscall state */
     AndroidSyscallState syscall_state;
 
-    /* ARMv7 CPU state */
+    /* Whether running 64-bit (AArch64) or 32-bit (ARMv7) code */
+    bool is_arm64;
+
+    /* ARMv7 CPU state (used when is_arm64 == false) */
     ArmV7State cpu;
+
+    /* AArch64 CPU state (used when is_arm64 == true) */
+    AArch64State cpu64;
 
     /* Whether the emulator has been initialised */
     bool initialised;

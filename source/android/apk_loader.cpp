@@ -2,7 +2,7 @@
  * Boxedwine Android - APK Loader Implementation
  *
  * Reads an Android APK (ZIP archive) and extracts:
- *   - Native shared libraries (lib/armeabi-v7a/(name).so or lib/armeabi/(name).so)
+ *   - Native shared libraries (lib/arm64-v8a/(name).so, lib/armeabi-v7a/(name).so, etc.)
  *   - AndroidManifest.xml (binary XML)
  *   - Assets on demand
  *
@@ -67,8 +67,8 @@ bool apk_open(const char *path, ApkDescriptor *desc) {
     if (!zip) return false;
     desc->zip_handle = zip;
 
-    /* ABI preference order: armeabi-v7a > armeabi */
-    const char *abi_list[] = { "armeabi-v7a", "armeabi", NULL };
+    /* ABI preference order: arm64-v8a > armeabi-v7a > armeabi > x86 */
+    const char *abi_list[] = { "arm64-v8a", "armeabi-v7a", "armeabi", "x86", NULL };
     const char *chosen_abi = NULL;
 
     /* First pass: find which ABI is present */
