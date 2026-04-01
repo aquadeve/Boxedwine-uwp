@@ -28,6 +28,7 @@
 #include "android_linker.h"
 #include "android_jni.h"
 #include "android_syscall.h"
+#include "gles1_on_gles2.h"
 #include "../emulation/cpu/arm/armv7_interpreter.h"
 #include "../emulation/cpu/arm/aarch64_interpreter.h"
 
@@ -94,6 +95,12 @@ typedef struct {
     /* Running state */
     bool running;
     int  exit_code;
+
+    /* GL ES 1.x emulation context (owned by this struct) */
+    GLES1Context *gles1;
+
+    /* Set by guest eglSwapBuffers to signal a frame is ready */
+    bool frame_ready;
 } AndroidEmulator;
 
 /* -------------------------------------------------------------------------

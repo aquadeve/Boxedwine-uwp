@@ -381,20 +381,22 @@ extern "C" int SDL_main(int argc, char* argv[])
             android_emulator_step(emu, CPU_STEPS_PER_FRAME);
         }
 
-        angle_renderer_upload(gl_renderer, NULL);
-        angle_renderer_draw(gl_renderer, config.screen_width, config.screen_height);
+        /* If the guest called eglSwapBuffers (frame_ready), present the frame.
+         * Otherwise keep stepping — the guest is still setting up. */
+        if (emu->frame_ready) {
+            /* Draw gamepad cursor overlay on top of the guest's rendering */
+            if (gamepad) {
+                angle_renderer_draw_cursor(
+                    gl_renderer,
+                    virtual_cursor_x,
+                    virtual_cursor_y,
+                    config.screen_width,
+                    config.screen_height
+                );
+            }
 
-        if (gamepad) {
-            angle_renderer_draw_cursor(
-                gl_renderer,
-                virtual_cursor_x,
-                virtual_cursor_y,
-                config.screen_width,
-                config.screen_height
-            );
+            SDL_GL_SwapWindow(window);
         }
-
-        SDL_GL_SwapWindow(window);
     }
 
     if (config.verbosity >= 1) {

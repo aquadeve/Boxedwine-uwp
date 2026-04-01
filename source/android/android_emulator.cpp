@@ -101,6 +101,27 @@
 #endif
 
 /* -------------------------------------------------------------------------
+ * Helpers for extracting ARM ABI arguments
+ *
+ * armeabi-v7a uses soft-float: floats pass in r0-r3 as bit-patterns.
+ * Extra args (>4) are on the stack at SP.
+ * ---------------------------------------------------------------------- */
+static inline float reg_to_float(uint32_t r) {
+    float f; memcpy(&f, &r, 4); return f;
+}
+
+static inline uint32_t stack_u32(const uint8_t *mem, uint32_t mem_size, uint32_t sp, int index) {
+    uint32_t addr = sp + (uint32_t)(index * 4);
+    if (addr + 4 > mem_size) return 0;
+    uint32_t v; memcpy(&v, mem + addr, 4); return v;
+}
+
+static inline float stack_float(const uint8_t *mem, uint32_t mem_size, uint32_t sp, int index) {
+    uint32_t bits = stack_u32(mem, mem_size, sp, index);
+    return reg_to_float(bits);
+}
+
+/* -------------------------------------------------------------------------
  * SWI handler called from the ARMv7 CPU interpreter
  * ---------------------------------------------------------------------- */
 static void swi_handler(void *ctx, uint32_t swi_num) {
@@ -1230,43 +1251,190 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
             break;
 
         /* ==================================================================
-         *  OpenGL ES 1.x / GLES (all no-op stubs for now)
-         *  The guest app calls these through the emulated EGL/GL.
-         *  We log but don't execute real GL calls since the host
-         *  rendering is handled separately by angle_renderer.
+         *  OpenGL ES 1.x → forwarded through GL ES 2.0 emulation layer
          * ================================================================== */
-        case STUB_GLENABLE: case STUB_GLDISABLE: case STUB_GLCLEAR:
-        case STUB_GLCLEARCOLOR: case STUB_GLVIEWPORT: case STUB_GLSCISSOR:
-        case STUB_GLMATRIXMODE: case STUB_GLLOADIDENTITY:
-        case STUB_GLPUSHMATRIX: case STUB_GLPOPMATRIX:
-        case STUB_GLTRANSLATEF: case STUB_GLSCALEF: case STUB_GLROTATEF:
-        case STUB_GLORTHOF: case STUB_GLMULTMATRIXF:
-        case STUB_GLCOLOR4F: case STUB_GLBLENDFUNC:
-        case STUB_GLDEPTHFUNC: case STUB_GLDEPTHMASK: case STUB_GLDEPTHRANGEF:
-        case STUB_GLALPHAFUNC: case STUB_GLCULLFACE: case STUB_GLSHADEMODEL:
-        case STUB_GLENABLECLIENTSTATE: case STUB_GLDISABLECLIENTSTATE:
-        case STUB_GLHINT: case STUB_GLSTENCILFUNC: case STUB_GLSTENCILMASK:
-        case STUB_GLSTENCILOP: case STUB_GLLIGHTMODELF: case STUB_GLLIGHTFV:
-        case STUB_GLPOLYGONOFFSET: case STUB_GLLINEWIDTH: case STUB_GLCOLORMASK:
-        case STUB_GLFOGF: case STUB_GLFOGFV: case STUB_GLFOGX:
-        case STUB_GLBINDTEXTURE: case STUB_GLGENTEXTURES: case STUB_GLDELETETEXTURES:
-        case STUB_GLTEXIMAGE2D: case STUB_GLTEXSUBIMAGE2D: case STUB_GLTEXPARAMETERI:
-        case STUB_GLVERTEXPOINTER: case STUB_GLTEXCOORDPOINTER:
-        case STUB_GLCOLORPOINTER: case STUB_GLNORMALPOINTER:
-        case STUB_GLBINDBUFFER: case STUB_GLGENBUFFERS: case STUB_GLDELETEBUFFERS:
-        case STUB_GLBUFFERDATA: case STUB_GLDRAWARRAYS: case STUB_GLDRAWELEMENTS:
-        case STUB_GLREADPIXELS:
-            cpu->r[0] = 0; break;
+        case STUB_GLENABLE:
+            gles1_enable(emu->gles1, cpu->r[0]); break;
+        case STUB_GLDISABLE:
+            gles1_disable(emu->gles1, cpu->r[0]); break;
+        case STUB_GLCLEAR:
+            gles1_clear(emu->gles1, cpu->r[0]); break;
+        case STUB_GLCLEARCOLOR:
+            gles1_clearColor(emu->gles1, reg_to_float(cpu->r[0]), reg_to_float(cpu->r[1]),
+                             reg_to_float(cpu->r[2]), reg_to_float(cpu->r[3])); break;
+        case STUB_GLVIEWPORT:
+            gles1_viewport(emu->gles1, (int)cpu->r[0], (int)cpu->r[1],
+                           (int)cpu->r[2], (int)cpu->r[3]); break;
+        case STUB_GLSCISSOR:
+            gles1_scissor(emu->gles1, (int)cpu->r[0], (int)cpu->r[1],
+                          (int)cpu->r[2], (int)cpu->r[3]); break;
+        case STUB_GLMATRIXMODE:
+            gles1_matrixMode(emu->gles1, cpu->r[0]); break;
+        case STUB_GLLOADIDENTITY:
+            gles1_loadIdentity(emu->gles1); break;
+        case STUB_GLPUSHMATRIX:
+            gles1_pushMatrix(emu->gles1); break;
+        case STUB_GLPOPMATRIX:
+            gles1_popMatrix(emu->gles1); break;
+        case STUB_GLTRANSLATEF:
+            gles1_translatef(emu->gles1, reg_to_float(cpu->r[0]),
+                             reg_to_float(cpu->r[1]), reg_to_float(cpu->r[2])); break;
+        case STUB_GLSCALEF:
+            gles1_scalef(emu->gles1, reg_to_float(cpu->r[0]),
+                         reg_to_float(cpu->r[1]), reg_to_float(cpu->r[2])); break;
+        case STUB_GLROTATEF:
+            gles1_rotatef(emu->gles1, reg_to_float(cpu->r[0]),
+                          reg_to_float(cpu->r[1]), reg_to_float(cpu->r[2]),
+                          reg_to_float(cpu->r[3])); break;
+        case STUB_GLORTHOF:
+            gles1_orthof(emu->gles1,
+                         reg_to_float(cpu->r[0]), reg_to_float(cpu->r[1]),
+                         reg_to_float(cpu->r[2]), reg_to_float(cpu->r[3]),
+                         stack_float(emu->mem, emu->mem_size, cpu->r[13], 0),
+                         stack_float(emu->mem, emu->mem_size, cpu->r[13], 1)); break;
+        case STUB_GLMULTMATRIXF:
+            if (cpu->r[0] && cpu->r[0] + 64 <= emu->mem_size) {
+                gles1_multMatrixf(emu->gles1, (const float *)(emu->mem + cpu->r[0]));
+            }
+            break;
+        case STUB_GLCOLOR4F:
+            gles1_color4f(emu->gles1, reg_to_float(cpu->r[0]), reg_to_float(cpu->r[1]),
+                          reg_to_float(cpu->r[2]), reg_to_float(cpu->r[3])); break;
+        case STUB_GLBLENDFUNC:
+            gles1_blendFunc(emu->gles1, cpu->r[0], cpu->r[1]); break;
+        case STUB_GLDEPTHFUNC:
+            gles1_depthFunc(emu->gles1, cpu->r[0]); break;
+        case STUB_GLDEPTHMASK:
+            gles1_depthMask(emu->gles1, (uint8_t)cpu->r[0]); break;
+        case STUB_GLDEPTHRANGEF:
+            gles1_depthRangef(emu->gles1, reg_to_float(cpu->r[0]), reg_to_float(cpu->r[1])); break;
+        case STUB_GLALPHAFUNC:
+            gles1_alphaFunc(emu->gles1, cpu->r[0], reg_to_float(cpu->r[1])); break;
+        case STUB_GLCULLFACE:
+            gles1_cullFace(emu->gles1, cpu->r[0]); break;
+        case STUB_GLSHADEMODEL:
+            gles1_shadeModel(emu->gles1, cpu->r[0]); break;
+        case STUB_GLENABLECLIENTSTATE:
+            gles1_enableClientState(emu->gles1, cpu->r[0]); break;
+        case STUB_GLDISABLECLIENTSTATE:
+            gles1_disableClientState(emu->gles1, cpu->r[0]); break;
+        case STUB_GLHINT:
+            gles1_hint(emu->gles1, cpu->r[0], cpu->r[1]); break;
+        case STUB_GLSTENCILFUNC:
+            gles1_stencilFunc(emu->gles1, cpu->r[0], (int)cpu->r[1], cpu->r[2]); break;
+        case STUB_GLSTENCILMASK:
+            gles1_stencilMask(emu->gles1, cpu->r[0]); break;
+        case STUB_GLSTENCILOP:
+            gles1_stencilOp(emu->gles1, cpu->r[0], cpu->r[1], cpu->r[2]); break;
+        case STUB_GLLIGHTMODELF:
+            gles1_lightModelf(emu->gles1, cpu->r[0], reg_to_float(cpu->r[1])); break;
+        case STUB_GLLIGHTFV:
+            if (cpu->r[2] && cpu->r[2] + 16 <= emu->mem_size) {
+                gles1_lightfv(emu->gles1, cpu->r[0], cpu->r[1],
+                              (const float *)(emu->mem + cpu->r[2]));
+            }
+            break;
+        case STUB_GLPOLYGONOFFSET:
+            gles1_polygonOffset(emu->gles1, reg_to_float(cpu->r[0]), reg_to_float(cpu->r[1])); break;
+        case STUB_GLLINEWIDTH:
+            gles1_lineWidth(emu->gles1, reg_to_float(cpu->r[0])); break;
+        case STUB_GLCOLORMASK:
+            gles1_colorMask(emu->gles1, (uint8_t)cpu->r[0], (uint8_t)cpu->r[1],
+                            (uint8_t)cpu->r[2], (uint8_t)cpu->r[3]); break;
+        case STUB_GLFOGF:
+            gles1_fogf(emu->gles1, cpu->r[0], reg_to_float(cpu->r[1])); break;
+        case STUB_GLFOGFV:
+            if (cpu->r[1] && cpu->r[1] + 16 <= emu->mem_size) {
+                gles1_fogfv(emu->gles1, cpu->r[0], (const float *)(emu->mem + cpu->r[1]));
+            }
+            break;
+        case STUB_GLFOGX:
+            gles1_fogx(emu->gles1, cpu->r[0], (int32_t)cpu->r[1]); break;
+
+        /* Textures */
+        case STUB_GLBINDTEXTURE:
+            gles1_bindTexture(emu->gles1, cpu->r[0], cpu->r[1]); break;
+        case STUB_GLGENTEXTURES:
+            gles1_genTextures(emu->gles1, (int)cpu->r[0], cpu->r[1]); break;
+        case STUB_GLDELETETEXTURES:
+            gles1_deleteTextures(emu->gles1, (int)cpu->r[0], cpu->r[1]); break;
+        case STUB_GLTEXIMAGE2D: {
+            uint32_t sp = cpu->r[13];
+            gles1_texImage2D(emu->gles1, cpu->r[0], (int)cpu->r[1], (int)cpu->r[2],
+                             (int)cpu->r[3],
+                             (int)stack_u32(emu->mem, emu->mem_size, sp, 0),  /* height */
+                             (int)stack_u32(emu->mem, emu->mem_size, sp, 1),  /* border */
+                             stack_u32(emu->mem, emu->mem_size, sp, 2),       /* format */
+                             stack_u32(emu->mem, emu->mem_size, sp, 3),       /* type */
+                             stack_u32(emu->mem, emu->mem_size, sp, 4));      /* pixels */
+            break;
+        }
+        case STUB_GLTEXSUBIMAGE2D: {
+            uint32_t sp = cpu->r[13];
+            gles1_texSubImage2D(emu->gles1, cpu->r[0], (int)cpu->r[1],
+                                (int)cpu->r[2], (int)cpu->r[3],
+                                (int)stack_u32(emu->mem, emu->mem_size, sp, 0),  /* w */
+                                (int)stack_u32(emu->mem, emu->mem_size, sp, 1),  /* h */
+                                stack_u32(emu->mem, emu->mem_size, sp, 2),       /* fmt */
+                                stack_u32(emu->mem, emu->mem_size, sp, 3),       /* type */
+                                stack_u32(emu->mem, emu->mem_size, sp, 4));      /* pixels */
+            break;
+        }
+        case STUB_GLTEXPARAMETERI:
+            gles1_texParameteri(emu->gles1, cpu->r[0], cpu->r[1], (int)cpu->r[2]); break;
+
+        /* Vertex arrays */
+        case STUB_GLVERTEXPOINTER:
+            gles1_vertexPointer(emu->gles1, (int)cpu->r[0], cpu->r[1],
+                                (int)cpu->r[2], cpu->r[3]); break;
+        case STUB_GLTEXCOORDPOINTER:
+            gles1_texCoordPointer(emu->gles1, (int)cpu->r[0], cpu->r[1],
+                                  (int)cpu->r[2], cpu->r[3]); break;
+        case STUB_GLCOLORPOINTER:
+            gles1_colorPointer(emu->gles1, (int)cpu->r[0], cpu->r[1],
+                               (int)cpu->r[2], cpu->r[3]); break;
+        case STUB_GLNORMALPOINTER:
+            gles1_normalPointer(emu->gles1, cpu->r[0], (int)cpu->r[1], cpu->r[2]); break;
+
+        /* VBO */
+        case STUB_GLBINDBUFFER:
+            gles1_bindBuffer(emu->gles1, cpu->r[0], cpu->r[1]); break;
+        case STUB_GLGENBUFFERS:
+            gles1_genBuffers(emu->gles1, (int)cpu->r[0], cpu->r[1]); break;
+        case STUB_GLDELETEBUFFERS:
+            gles1_deleteBuffers(emu->gles1, (int)cpu->r[0], cpu->r[1]); break;
+        case STUB_GLBUFFERDATA:
+            gles1_bufferData(emu->gles1, cpu->r[0], (int)cpu->r[1], cpu->r[2], cpu->r[3]); break;
+
+        /* Draw calls */
+        case STUB_GLDRAWARRAYS:
+            gles1_drawArrays(emu->gles1, cpu->r[0], (int)cpu->r[1], (int)cpu->r[2]); break;
+        case STUB_GLDRAWELEMENTS:
+            gles1_drawElements(emu->gles1, cpu->r[0], (int)cpu->r[1], cpu->r[2], cpu->r[3]); break;
+
+        /* Queries */
         case STUB_GLGETERROR:
-            cpu->r[0] = 0; break; /* GL_NO_ERROR */
-        case STUB_GLGETSTRING:
-            /* Return 0 (NULL) for now; guest should handle gracefully */
-            cpu->r[0] = 0; break;
+            cpu->r[0] = gles1_getError(emu->gles1); break;
+        case STUB_GLGETSTRING: {
+            uint32_t guest_ptr = 0;
+            gles1_getString(emu->gles1, cpu->r[0], emu->mem, emu->mem_size, &guest_ptr);
+            cpu->r[0] = guest_ptr;
+            break;
+        }
         case STUB_GLGETFLOATV:
-            cpu->r[0] = 0; break;
+            gles1_getFloatv(emu->gles1, cpu->r[0], cpu->r[1]); break;
+        case STUB_GLREADPIXELS: {
+            uint32_t sp = cpu->r[13];
+            gles1_readPixels(emu->gles1, (int)cpu->r[0], (int)cpu->r[1],
+                             (int)cpu->r[2], (int)cpu->r[3],
+                             stack_u32(emu->mem, emu->mem_size, sp, 0),
+                             stack_u32(emu->mem, emu->mem_size, sp, 1),
+                             stack_u32(emu->mem, emu->mem_size, sp, 2));
+            break;
+        }
 
         /* ==================================================================
-         *  EGL (stub implementations matching referenceCode/apkenv pattern)
+         *  EGL (stub implementations — guest uses our host GL context)
          * ================================================================== */
         case STUB_EGLGETDISPLAY:
             cpu->r[0] = 0xC00FA15Eu; break; /* fake display handle */
@@ -1289,6 +1457,8 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
         case STUB_EGLQUERYSURFACE:
             cpu->r[0] = 1; break;
         case STUB_EGLSWAPBUFFERS:
+            /* Signal the host main loop that a frame is ready */
+            emu->frame_ready = true;
             cpu->r[0] = 1; break;
         case STUB_EGLSWAPINTERVAL:
             cpu->r[0] = 1; break;
@@ -1690,6 +1860,15 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
 
     emu->initialised = true;
     emu->running     = true;
+    emu->frame_ready = false;
+
+    /* Create GL ES 1.x emulation context (host GL context must be current) */
+    emu->gles1 = gles1_create(emu->mem, emu->mem_size);
+    if (!emu->gles1) {
+        EMU_LOG_ERR("failed to create GLES1 emulation context");
+        /* Non-fatal: GL rendering will fail but emulator can still run */
+    }
+
     EMU_LOG_DEBUG("init: SUCCESS — emulator initialised and ready to run");
     return true;
 }
@@ -1718,15 +1897,16 @@ int android_emulator_run(AndroidEmulator *emu) {
 
 bool android_emulator_step(AndroidEmulator *emu, unsigned max_instructions) {
     if (!emu->initialised) return false;
+    emu->frame_ready = false;
     if (emu->is_arm64) {
         if (!emu->cpu64.running) return false;
-        for (unsigned i = 0; i < max_instructions && emu->cpu64.running; i++) {
+        for (unsigned i = 0; i < max_instructions && emu->cpu64.running && !emu->frame_ready; i++) {
             aarch64_step(&emu->cpu64);
         }
         return emu->cpu64.running;
     } else {
         if (!emu->cpu.running) return false;
-        for (unsigned i = 0; i < max_instructions && emu->cpu.running; i++) {
+        for (unsigned i = 0; i < max_instructions && emu->cpu.running && !emu->frame_ready; i++) {
             armv7_step(&emu->cpu);
         }
         return emu->cpu.running;
@@ -1853,6 +2033,10 @@ void android_emulator_gamepad(AndroidEmulator *emu,
  * ---------------------------------------------------------------------- */
 
 void android_emulator_destroy(AndroidEmulator *emu) {
+    if (emu->gles1) {
+        gles1_destroy(emu->gles1);
+        emu->gles1 = NULL;
+    }
     android_linker_destroy(&emu->linker);
     android_jni_destroy(&emu->jni);
     apk_close(&emu->apk);

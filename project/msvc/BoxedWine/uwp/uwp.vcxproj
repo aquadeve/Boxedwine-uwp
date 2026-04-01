@@ -355,6 +355,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="..\..\..\..\source\android\angle_renderer.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\gles1_on_gles2.cpp" />
     <ClCompile Include="..\..\..\..\source\android\android_emulator.cpp" />
     <ClCompile Include="..\..\..\..\source\android\apk_loader.cpp" />
     <ClCompile Include="..\..\..\..\source\android\android_linker.cpp" />
