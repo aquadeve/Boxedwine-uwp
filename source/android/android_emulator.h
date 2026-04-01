@@ -3,12 +3,12 @@
  *
  * Top-level orchestration layer that:
  *   1. Loads an APK file
- *   2. Maps native ARMv7 shared libraries into emulated memory
+ *   2. Maps native ARMv7 or AArch64 shared libraries into emulated memory
  *   3. Resolves dynamic symbols and applies relocations
  *   4. Initialises the JNI environment
  *   5. Calls JNI_OnLoad on each library
  *   6. Calls the application's ANativeActivity_onCreate or nativeStart entry point
- *   7. Runs the ARMv7 CPU interpreter main loop
+ *   7. Runs the ARMv7 or AArch64 CPU interpreter main loop
  *   8. Routes Linux syscalls to the Android syscall layer
  *
  * Targets Universal Windows Platform (UWP) exclusively.

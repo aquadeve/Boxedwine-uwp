@@ -61,6 +61,9 @@
     <ClCompile Include="..\..\..\..\source\emulation\cpu\arm\armv7_interpreter.cpp">
       <Filter>Source Files\arm</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\arm\aarch64_interpreter.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="uwp_TemporaryKey.pfx" />

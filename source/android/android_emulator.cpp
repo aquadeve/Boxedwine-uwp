@@ -2,7 +2,7 @@
  * Boxedwine Android Emulator - Core Implementation
  *
  * Orchestrates APK loading, ELF linking, JNI setup, syscall routing,
- * and ARMv7 CPU execution for running Android native apps on UWP.
+ * and ARMv7/AArch64 CPU execution for running Android native apps on UWP.
  *
  * Architecture overview:
  *
@@ -16,10 +16,10 @@
  *                              android_jni_init
  *                              (creates JNIEnv / JavaVM stubs)
  *                                        |
- *                              cpu: ArmV7State
- *                              (interprets ARMv7 / Thumb instructions)
+ *                              cpu: ArmV7State or AArch64State
+ *                              (interprets ARMv7/Thumb or A64 instructions)
  *                                   |       |
- *                              SWI handler  |
+ *                              SWI/SVC handler
  *                                   |       |
  *                         android_syscall   |
  *                         (Linux ARM ABI)   |
@@ -57,7 +57,32 @@ static void undef_handler(void *ctx, uint32_t instr) {
 }
 
 /* -------------------------------------------------------------------------
- * Memory access callbacks (pass-through to the flat emulated memory)
+ * AArch64 SVC handler
+ * ---------------------------------------------------------------------- */
+static void svc_handler_64(void *ctx, uint32_t svc_num) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+    /* Forward to bionic stub dispatch or syscall */
+    if (svc_num > 0 && svc_num < 256) {
+        /* For now, bionic stubs for AArch64 use the same SVC numbering.
+         * The stub dispatch reads registers from cpu64 instead of cpu. */
+        /* TODO: implement AArch64-specific bionic dispatch */
+    }
+    /* Map AArch64 syscall: x8 = syscall number, x0-x5 = args */
+    (void)svc_num;
+}
+
+/* -------------------------------------------------------------------------
+ * AArch64 undefined instruction handler
+ * ---------------------------------------------------------------------- */
+static void undef_handler_64(void *ctx, uint32_t instr) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+    fprintf(stderr, "android_emulator: undefined A64 instruction 0x%08X at PC=0x%016llX\n",
+            instr, (unsigned long long)emu->cpu64.pc);
+    emu->cpu64.running = false;
+}
+
+/* -------------------------------------------------------------------------
+ * Memory access callbacks for ARMv7 (32-bit address, pass-through to flat memory)
  * ---------------------------------------------------------------------- */
 static uint8_t mem_r8(void *ctx, uint32_t addr) {
     AndroidEmulator *emu = (AndroidEmulator*)ctx;
@@ -88,6 +113,58 @@ static void mem_w16(void *ctx, uint32_t addr, uint16_t v) {
 static void mem_w32(void *ctx, uint32_t addr, uint32_t v) {
     AndroidEmulator *emu = (AndroidEmulator*)ctx;
     if (addr + 4 <= emu->mem_size) memcpy(emu->mem + addr, &v, 4);
+}
+
+/* -------------------------------------------------------------------------
+ * Memory access callbacks for AArch64 (64-bit address, truncated to 32-bit range)
+ * ---------------------------------------------------------------------- */
+static uint8_t mem64_r8(void *ctx, uint64_t addr) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+    uint32_t a = (uint32_t)addr;
+    if (a < emu->mem_size) return emu->mem[a];
+    fprintf(stderr, "android_emulator: read8 out of bounds addr=0x%016llX\n", (unsigned long long)addr);
+    return 0;
+}
+static uint16_t mem64_r16(void *ctx, uint64_t addr) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+    uint32_t a = (uint32_t)addr;
+    uint16_t v = 0;
+    if (a + 2 <= emu->mem_size) memcpy(&v, emu->mem + a, 2);
+    return v;
+}
+static uint32_t mem64_r32(void *ctx, uint64_t addr) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+    uint32_t a = (uint32_t)addr;
+    uint32_t v = 0;
+    if (a + 4 <= emu->mem_size) memcpy(&v, emu->mem + a, 4);
+    return v;
+}
+static uint64_t mem64_r64(void *ctx, uint64_t addr) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+    uint32_t a = (uint32_t)addr;
+    uint64_t v = 0;
+    if (a + 8 <= emu->mem_size) memcpy(&v, emu->mem + a, 8);
+    return v;
+}
+static void mem64_w8(void *ctx, uint64_t addr, uint8_t v) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+    uint32_t a = (uint32_t)addr;
+    if (a < emu->mem_size) emu->mem[a] = v;
+}
+static void mem64_w16(void *ctx, uint64_t addr, uint16_t v) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+    uint32_t a = (uint32_t)addr;
+    if (a + 2 <= emu->mem_size) memcpy(emu->mem + a, &v, 2);
+}
+static void mem64_w32(void *ctx, uint64_t addr, uint32_t v) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+    uint32_t a = (uint32_t)addr;
+    if (a + 4 <= emu->mem_size) memcpy(emu->mem + a, &v, 4);
+}
+static void mem64_w64(void *ctx, uint64_t addr, uint64_t v) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+    uint32_t a = (uint32_t)addr;
+    if (a + 8 <= emu->mem_size) memcpy(emu->mem + a, &v, 8);
 }
 
 /* -------------------------------------------------------------------------
@@ -178,6 +255,16 @@ static void install_stub(uint8_t *mem, uint32_t va, uint32_t stub_id) {
     uint16_t nop = 0x46C0;
     memcpy(mem + va + 4, &nop, 2);
     memcpy(mem + va + 6, &nop, 2);
+}
+
+/* AArch64 SVC + RET encoding (A64 fixed-width 4-byte instructions) */
+static void install_stub_a64(uint8_t *mem, uint32_t va, uint32_t stub_id) {
+    /* SVC #imm16 = 0xD4000001 | (imm16 << 5) */
+    /* RET (to X30) = 0xD65F03C0 */
+    uint32_t svc_instr = 0xD4000001u | ((stub_id & 0xFFFFu) << 5);
+    uint32_t ret_instr = 0xD65F03C0u;
+    memcpy(mem + va,     &svc_instr, 4);
+    memcpy(mem + va + 4, &ret_instr, 4);
 }
 
 /* -------------------------------------------------------------------------
@@ -344,6 +431,35 @@ static void combined_swi_handler(void *ctx, uint32_t swi_num) {
     }
 }
 
+/* AArch64 combined SVC dispatcher */
+static void combined_svc_handler_64(void *ctx, uint32_t svc_num) {
+    AndroidEmulator *emu = (AndroidEmulator*)ctx;
+
+    if (svc_num > 0 && svc_num < STUB_COUNT) {
+        /* AArch64 bionic stub: mirror registers to the ARMv7 state for
+         * the existing bionic_stub_dispatch, then copy back.
+         * AArch64 calling convention puts args in X0-X7. */
+        emu->cpu.r[0] = (uint32_t)emu->cpu64.x[0];
+        emu->cpu.r[1] = (uint32_t)emu->cpu64.x[1];
+        emu->cpu.r[2] = (uint32_t)emu->cpu64.x[2];
+        emu->cpu.r[3] = (uint32_t)emu->cpu64.x[3];
+
+        bionic_stub_dispatch(emu, svc_num);
+
+        /* Copy result back to X0 */
+        emu->cpu64.x[0] = (uint64_t)emu->cpu.r[0];
+        /* Propagate halted state */
+        if (!emu->cpu.running)
+            emu->cpu64.running = false;
+    } else {
+        /* Real Linux syscall: AArch64 Linux uses X8 as syscall number */
+        /* For now, log and stop */
+        fprintf(stderr, "android_emulator: AArch64 syscall SVC #%u (x8=%llu) not yet implemented\n",
+                svc_num, (unsigned long long)emu->cpu64.x[8]);
+        emu->cpu64.running = false;
+    }
+}
+
 /* -------------------------------------------------------------------------
  * android_emulator_init
  * ---------------------------------------------------------------------- */
@@ -366,12 +482,21 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     android_jni_init(&emu->jni);
     android_linker_init(&emu->linker, emu->mem, emu->mem_size, ANDROID_LOAD_BASE);
 
-    /* Install bionic stubs */
+    /* Detect ABI: arm64-v8a → AArch64, everything else → ARMv7 */
+    emu->is_arm64 = (strcmp(emu->apk.target_abi, "arm64-v8a") == 0);
+
+    /* Install bionic stubs (encoding depends on target ABI) */
     for (unsigned i = 1; i < STUB_COUNT; i++) {
         uint32_t stub_va = BIONIC_STUB_BASE + i * BIONIC_STUB_STRIDE;
-        install_stub(emu->mem, stub_va, i);
-        /* Register as Thumb address (set bit 0) for BX/BLX */
-        android_linker_add_override(&emu->linker, stub_names[i], stub_va | 1u);
+        if (emu->is_arm64) {
+            install_stub_a64(emu->mem, stub_va, i);
+            /* AArch64 doesn't use Thumb bit; register plain VA */
+            android_linker_add_override(&emu->linker, stub_names[i], stub_va);
+        } else {
+            install_stub(emu->mem, stub_va, i);
+            /* Register as Thumb address (set bit 0) for BX/BLX */
+            android_linker_add_override(&emu->linker, stub_names[i], stub_va | 1u);
+        }
     }
 
     /* Load the APK */
@@ -402,21 +527,43 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
         return false;
     }
 
-    /* Initialise CPU */
-    armv7_init(&emu->cpu);
-    emu->cpu.callback_ctx    = emu;
-    emu->cpu.mem_read8       = mem_r8;
-    emu->cpu.mem_read16      = mem_r16;
-    emu->cpu.mem_read32      = mem_r32;
-    emu->cpu.mem_write8      = mem_w8;
-    emu->cpu.mem_write16     = mem_w16;
-    emu->cpu.mem_write32     = mem_w32;
-    emu->cpu.syscall_handler = combined_swi_handler;
-    emu->cpu.undef_handler   = undef_handler;
+    /* Initialise CPU based on detected ABI */
+    if (emu->is_arm64) {
+        aarch64_init(&emu->cpu64);
+        emu->cpu64.callback_ctx     = emu;
+        emu->cpu64.mem_read8        = mem64_r8;
+        emu->cpu64.mem_read16       = mem64_r16;
+        emu->cpu64.mem_read32       = mem64_r32;
+        emu->cpu64.mem_read64       = mem64_r64;
+        emu->cpu64.mem_write8       = mem64_w8;
+        emu->cpu64.mem_write16      = mem64_w16;
+        emu->cpu64.mem_write32      = mem64_w32;
+        emu->cpu64.mem_write64      = mem64_w64;
+        emu->cpu64.syscall_handler  = combined_svc_handler_64;
+        emu->cpu64.undef_handler    = undef_handler_64;
+
+        /* Also init ARMv7 state (used by bionic_stub_dispatch bridge) */
+        armv7_init(&emu->cpu);
+    } else {
+        armv7_init(&emu->cpu);
+        emu->cpu.callback_ctx    = emu;
+        emu->cpu.mem_read8       = mem_r8;
+        emu->cpu.mem_read16      = mem_r16;
+        emu->cpu.mem_read32      = mem_r32;
+        emu->cpu.mem_write8      = mem_w8;
+        emu->cpu.mem_write16     = mem_w16;
+        emu->cpu.mem_write32     = mem_w32;
+        emu->cpu.syscall_handler = combined_swi_handler;
+        emu->cpu.undef_handler   = undef_handler;
+    }
 
     /* Set up stack */
     uint32_t stack_top = ANDROID_STACK_TOP;
-    emu->cpu.r[ARM_SP] = stack_top;
+    if (emu->is_arm64) {
+        emu->cpu64.sp = (uint64_t)stack_top;
+    } else {
+        emu->cpu.r[ARM_SP] = stack_top;
+    }
 
     /* Locate entry point: prefer "ANativeActivity_onCreate", then "android_main",
      * then "Java_*_nativeInit", then the first library's entry point. */
@@ -442,30 +589,40 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     }
 
     if (config->verbosity >= 1)
-        fprintf(stdout, "android_emulator: entry point at VA 0x%08X\n", entry);
-
-    /* Set PC; Thumb if bit 0 set */
-    if (entry & 1) {
-        emu->cpu.cpsr |= ARM_CPSR_T;
-        emu->cpu.r[ARM_PC] = entry & ~1u;
-    } else {
-        emu->cpu.r[ARM_PC] = entry;
-    }
+        fprintf(stdout, "android_emulator: entry point at VA 0x%08X (%s mode)\n",
+                entry, emu->is_arm64 ? "AArch64" : "ARMv7");
 
     /* Set up fake argc/argv on stack */
     const char fake_argv0[] = "/data/app/com.android.app/base.apk";
-    uint32_t argv0_va = stack_top - sizeof(fake_argv0);
+    uint32_t argv0_va = stack_top - (uint32_t)sizeof(fake_argv0);
     memcpy(emu->mem + argv0_va, fake_argv0, sizeof(fake_argv0));
-    /* Push argv[0] pointer */
     stack_top = argv0_va - 16;
     uint32_t argc = 1, argv_va = stack_top + 4;
     memcpy(emu->mem + stack_top,     &argc,    4);
     memcpy(emu->mem + argv_va,       &argv0_va, 4);
     uint32_t null_ptr = 0;
     memcpy(emu->mem + argv_va + 4,   &null_ptr, 4); /* NULL terminator */
-    emu->cpu.r[ARM_SP] = stack_top;
-    emu->cpu.r[0] = argc;
-    emu->cpu.r[1] = argv_va;
+
+    if (emu->is_arm64) {
+        /* AArch64: PC = entry (no Thumb bit), args in X0/X1 */
+        emu->cpu64.pc = (uint64_t)entry;
+        emu->cpu64.sp = (uint64_t)stack_top;
+        emu->cpu64.x[0] = (uint64_t)argc;
+        emu->cpu64.x[1] = (uint64_t)argv_va;
+        /* Set X30 (LR) to 0 so RET halts */
+        emu->cpu64.x[AARCH64_LR] = 0;
+    } else {
+        /* ARMv7: Set PC; Thumb if bit 0 set */
+        if (entry & 1) {
+            emu->cpu.cpsr |= ARM_CPSR_T;
+            emu->cpu.r[ARM_PC] = entry & ~1u;
+        } else {
+            emu->cpu.r[ARM_PC] = entry;
+        }
+        emu->cpu.r[ARM_SP] = stack_top;
+        emu->cpu.r[0] = argc;
+        emu->cpu.r[1] = argv_va;
+    }
 
     emu->initialised = true;
     emu->running     = true;
@@ -478,9 +635,15 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
 
 int android_emulator_run(AndroidEmulator *emu) {
     if (!emu->initialised) return -1;
-    armv7_run(&emu->cpu);
-    emu->running   = false;
-    emu->exit_code = emu->cpu.exit_code;
+    if (emu->is_arm64) {
+        aarch64_run(&emu->cpu64);
+        emu->running   = false;
+        emu->exit_code = emu->cpu64.exit_code;
+    } else {
+        armv7_run(&emu->cpu);
+        emu->running   = false;
+        emu->exit_code = emu->cpu.exit_code;
+    }
     return emu->exit_code;
 }
 
@@ -489,11 +652,20 @@ int android_emulator_run(AndroidEmulator *emu) {
  * ---------------------------------------------------------------------- */
 
 bool android_emulator_step(AndroidEmulator *emu, unsigned max_instructions) {
-    if (!emu->initialised || !emu->cpu.running) return false;
-    for (unsigned i = 0; i < max_instructions && emu->cpu.running; i++) {
-        armv7_step(&emu->cpu);
+    if (!emu->initialised) return false;
+    if (emu->is_arm64) {
+        if (!emu->cpu64.running) return false;
+        for (unsigned i = 0; i < max_instructions && emu->cpu64.running; i++) {
+            aarch64_step(&emu->cpu64);
+        }
+        return emu->cpu64.running;
+    } else {
+        if (!emu->cpu.running) return false;
+        for (unsigned i = 0; i < max_instructions && emu->cpu.running; i++) {
+            armv7_step(&emu->cpu);
+        }
+        return emu->cpu.running;
     }
-    return emu->cpu.running;
 }
 
 /* -------------------------------------------------------------------------

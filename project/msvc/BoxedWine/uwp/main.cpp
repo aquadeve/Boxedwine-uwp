@@ -232,7 +232,7 @@ extern "C" int SDL_main(int argc, char* argv[])
             SDL_MESSAGEBOX_ERROR,
             "Boxedwine Android",
             "Failed to initialise Android emulator.\n"
-            "Check that the APK contains ARMv7 native libraries.",
+            "Check that the APK contains ARMv7/ARM64 native libraries.",
             window
         );
         angle_renderer_destroy(gl_renderer);
