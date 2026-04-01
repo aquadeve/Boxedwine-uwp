@@ -191,6 +191,10 @@ extern "C" int SDL_main(int argc, char* argv[])
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
+    /* On UWP, the window is a CoreWindow managed by the system shell.
+     * SDL_WINDOW_FULLSCREEN_DESKTOP is a desktop Win32 concept and should
+     * NOT be used.  The CoreWindow already fills the available screen area.
+     * We just need SDL_WINDOW_OPENGL and let SDL/WinRT handle the rest. */
     SDL_Window* window = SDL_CreateWindow(
         "Boxedwine Android",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -214,6 +218,22 @@ extern "C" int SDL_main(int argc, char* argv[])
 
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(1);
+
+    /* On UWP the CoreWindow size may differ from the requested size.
+     * Query the actual window dimensions and set the GL viewport to
+     * stretch rendering to fill the entire window area. */
+    {
+        int actual_w = 0, actual_h = 0;
+        SDL_GetWindowSize(window, &actual_w, &actual_h);
+        if (actual_w > 0 && actual_h > 0) {
+            config.screen_width = actual_w;
+            config.screen_height = actual_h;
+        }
+        glViewport(0, 0, config.screen_width, config.screen_height);
+#if defined(_DEBUG)
+        SDL_Log("[EMU DEBUG] actual window size: %dx%d", config.screen_width, config.screen_height);
+#endif
+    }
 
     if (config.verbosity >= 1) {
         SDL_Log("OpenGL ES renderer: %s", (const char*)glGetString(GL_RENDERER));
@@ -353,6 +373,10 @@ extern "C" int SDL_main(int argc, char* argv[])
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                     config.screen_width = event.window.data1;
                     config.screen_height = event.window.data2;
+                    glViewport(0, 0, config.screen_width, config.screen_height);
+#if defined(_DEBUG)
+                    SDL_Log("[EMU DEBUG] window resized to %dx%d", config.screen_width, config.screen_height);
+#endif
                 }
                 break;
             }

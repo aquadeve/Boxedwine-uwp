@@ -1601,23 +1601,19 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
         /* ==================================================================
          *  OpenSL ES (audio via SDL2)
          *
-         *  OpenSL ES uses an interface-ID driven object model.
-         *  Android NDK games typically:
-         *    1. slCreateEngine(&engineObj, ...)
-         *    2. (*engineObj)->Realize(engineObj, SL_BOOLEAN_FALSE)
-         *    3. (*engineObj)->GetInterface(engineObj, SL_IID_ENGINE, &engine)
-         *    4. (*engine)->CreateOutputMix(engine, &outputMixObj, ...)
-         *    5. (*outputMixObj)->Realize(outputMixObj, ...)
-         *    6. (*engine)->CreateAudioPlayer(engine, &playerObj, ...)
-         *    7. (*playerObj)->Realize(playerObj, ...)
-         *    8. (*playerObj)->GetInterface(playerObj, SL_IID_PLAY, &play)
-         *    9. (*playerObj)->GetInterface(playerObj, SL_IID_BUFFERQUEUE, &bq)
-         *   10. (*bq)->RegisterCallback(bq, callback, context)
-         *   11. (*play)->SetPlayState(play, SL_PLAYSTATE_PLAYING)
-         *   12. (*bq)->Enqueue(bq, data, size) — repeatedly
+         *  OpenSL ES uses a COM-like interface-ID driven object model.
+         *  Only slCreateEngine is directly linked by name; all subsequent
+         *  calls go through vtable function pointers in emulated memory.
          *
-         *  We fake the object pointers (they're just non-NULL sentinels)
-         *  and route actual audio through our SDL2 backend.
+         *  Current implementation:
+         *    - slCreateEngine: creates SDL2 audio backend, returns success
+         *    - Remaining stubs are registered but won't be called until
+         *      vtable routing is implemented (future enhancement).
+         *    - Audio infrastructure (android_audio.h) is ready for when
+         *      vtable-based Enqueue/SetPlayState calls are routed through.
+         *
+         *  TODO: Write fake SLObjectItf/SLEngineItf vtables into emulated
+         *  memory so that (*obj)->Method() calls jump to our SVC trampolines.
          * ================================================================== */
         case STUB_SLCREATEENGINE: {
             EMU_LOG_DEBUG("slCreateEngine called (r0=objPtr=0x%08X)", cpu->r[0]);
