@@ -175,7 +175,7 @@ extern "C" int SDL_main(int argc, char* argv[])
 
     configure_sdl_hints_for_uwp();
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) < 0) {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
         return 1;
     }

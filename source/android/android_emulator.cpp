@@ -595,6 +595,18 @@ enum BionicStub {
 
     /* ---- OpenSL ES ---- */
     STUB_SLCREATEENGINE,
+    STUB_SL_ENGINE_CREATEOUTPUTMIX,
+    STUB_SL_ENGINE_CREATEAUDIOPLAYER,
+    STUB_SL_ENGINE_GETINTERFACE,
+    STUB_SL_OUTPUTMIX_REALIZE,
+    STUB_SL_PLAYER_REALIZE,
+    STUB_SL_PLAYER_GETINTERFACE,
+    STUB_SL_PLAYER_SETPLAYSTATE,
+    STUB_SL_BUFFERQUEUE_ENQUEUE,
+    STUB_SL_BUFFERQUEUE_REGISTERCALLBACK,
+    STUB_SL_BUFFERQUEUE_CLEAR,
+    STUB_SL_VOLUME_SETVOLUME,
+    STUB_SL_OBJECT_DESTROY,
 
     STUB_COUNT  /* must be last */
 };
@@ -711,21 +723,39 @@ static const char *stub_names[STUB_COUNT] = {
     "AConfiguration_getLanguage", "AConfiguration_getCountry", "AConfiguration_delete",
     /* OpenSL ES */
     "slCreateEngine",
+    "sl_engine_CreateOutputMix",
+    "sl_engine_CreateAudioPlayer",
+    "sl_engine_GetInterface",
+    "sl_outputmix_Realize",
+    "sl_player_Realize",
+    "sl_player_GetInterface",
+    "sl_player_SetPlayState",
+    "sl_bufferqueue_Enqueue",
+    "sl_bufferqueue_RegisterCallback",
+    "sl_bufferqueue_Clear",
+    "sl_volume_SetVolumeLevel",
+    "sl_object_Destroy",
 };
 
-/* ARM thumb SVC + BX LR encoding (Thumb-2 with SVC stub_id) */
+/* ARM-mode SWI + BX LR encoding (32-bit ARM with 24-bit immediate).
+ *
+ * Previous implementation used Thumb SVC #imm8, but Thumb SVC only
+ * supports an 8-bit immediate (0-255).  With 294 bionic stubs, stubs
+ * 256+ (including eglSwapBuffers, EGL, NDK, and OpenSL ES) were
+ * silently truncated and never dispatched correctly.
+ *
+ * ARM SWI supports a 24-bit immediate, which is more than enough.
+ * The stubs are registered WITHOUT the Thumb bit (bit 0 clear) so
+ * BX/BLX from Thumb code switches to ARM mode, executes SWI, then
+ * BX LR (with Thumb-flagged LR) switches back to the caller's mode.
+ */
 static void install_stub(uint8_t *mem, uint32_t va, uint32_t stub_id) {
-    /* Thumb encoding of "SVC stub_id; BX LR" */
-    /* SVC imm8 in Thumb = 0xDF00 | (imm8) */
-    /* BX LR in Thumb    = 0x4770 */
-    uint16_t svc_instr  = (uint16_t)(0xDF00 | (stub_id & 0xFF));
-    uint16_t bx_lr_instr = 0x4770;
-    memcpy(mem + va,     &svc_instr,   2);
-    memcpy(mem + va + 2, &bx_lr_instr, 2);
-    /* Pad with NOP */
-    uint16_t nop = 0x46C0;
-    memcpy(mem + va + 4, &nop, 2);
-    memcpy(mem + va + 6, &nop, 2);
+    /* ARM encoding of "SWI #stub_id" = 0xEF000000 | (imm24) */
+    /* ARM encoding of "BX LR"        = 0xE12FFF1E              */
+    uint32_t swi_instr = 0xEF000000u | (stub_id & 0x00FFFFFFu);
+    uint32_t bx_lr     = 0xE12FFF1Eu;
+    memcpy(mem + va,     &swi_instr, 4);
+    memcpy(mem + va + 4, &bx_lr,     4);
 }
 
 /* AArch64 SVC + RET encoding (A64 fixed-width 4-byte instructions) */
@@ -758,16 +788,16 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
     stub_call_count++;
     if (stub_id < STUB_COUNT && !stub_seen[stub_id]) {
         stub_seen[stub_id] = true;
-        EMU_LOG_DEBUG("stub[%u]: first call to %s (call #%u, pc=0x%08X)",
+        EMU_LOG_DEBUG("stub[%u]: first call to %s (call #%u, pc=0x%08X, lr=0x%08X, r0=0x%08X)",
                       stub_id,
                       stub_id < STUB_COUNT ? stub_names[stub_id] : "???",
                       stub_call_count,
-                      cpu->r[15]);
+                      cpu->r[15], cpu->r[ARM_LR], cpu->r[0]);
     }
     /* Log every 100000th call so we can see the emulator is alive */
     if ((stub_call_count % 100000) == 0) {
-        EMU_LOG_DEBUG("stub dispatch: %u total calls, pc=0x%08X sp=0x%08X",
-                      stub_call_count, cpu->r[15], cpu->r[13]);
+        EMU_LOG_DEBUG("stub dispatch: %u total calls, pc=0x%08X sp=0x%08X lr=0x%08X",
+                      stub_call_count, cpu->r[15], cpu->r[13], cpu->r[ARM_LR]);
     }
 #endif
 
@@ -1569,10 +1599,126 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
             cpu->r[0] = 0; break;
 
         /* ==================================================================
-         *  OpenSL ES (audio stub)
+         *  OpenSL ES (audio via SDL2)
+         *
+         *  OpenSL ES uses an interface-ID driven object model.
+         *  Android NDK games typically:
+         *    1. slCreateEngine(&engineObj, ...)
+         *    2. (*engineObj)->Realize(engineObj, SL_BOOLEAN_FALSE)
+         *    3. (*engineObj)->GetInterface(engineObj, SL_IID_ENGINE, &engine)
+         *    4. (*engine)->CreateOutputMix(engine, &outputMixObj, ...)
+         *    5. (*outputMixObj)->Realize(outputMixObj, ...)
+         *    6. (*engine)->CreateAudioPlayer(engine, &playerObj, ...)
+         *    7. (*playerObj)->Realize(playerObj, ...)
+         *    8. (*playerObj)->GetInterface(playerObj, SL_IID_PLAY, &play)
+         *    9. (*playerObj)->GetInterface(playerObj, SL_IID_BUFFERQUEUE, &bq)
+         *   10. (*bq)->RegisterCallback(bq, callback, context)
+         *   11. (*play)->SetPlayState(play, SL_PLAYSTATE_PLAYING)
+         *   12. (*bq)->Enqueue(bq, data, size) — repeatedly
+         *
+         *  We fake the object pointers (they're just non-NULL sentinels)
+         *  and route actual audio through our SDL2 backend.
          * ================================================================== */
-        case STUB_SLCREATEENGINE:
-            cpu->r[0] = (uint32_t)-1; break; /* SL_RESULT_INTERNAL_ERROR */
+        case STUB_SLCREATEENGINE: {
+            EMU_LOG_DEBUG("slCreateEngine called (r0=objPtr=0x%08X)", cpu->r[0]);
+            /* Write a fake engine object handle to *pEngine (r0) */
+            if (cpu->r[0] && cpu->r[0] + 4 <= emu->mem_size) {
+                uint32_t fake_engine = 0xA0D10001u;
+                memcpy(emu->mem + cpu->r[0], &fake_engine, 4);
+            }
+            /* Create the audio context if not already done */
+            if (!emu->audio) {
+                AndroidAudioConfig acfg = {};
+                acfg.sample_rate = 44100;
+                acfg.channels = 2;
+                acfg.bits_per_sample = 16;
+                acfg.buffer_size = 4096;
+                emu->audio = android_audio_create(&acfg);
+                if (emu->audio) {
+                    EMU_LOG_INFO("OpenSL ES: audio engine created (SDL2 backend)");
+                } else {
+                    EMU_LOG_ERR("OpenSL ES: failed to create audio engine");
+                }
+            }
+            cpu->r[0] = 0; /* SL_RESULT_SUCCESS */
+            break;
+        }
+        case STUB_SL_ENGINE_CREATEOUTPUTMIX: {
+            EMU_LOG_DEBUG("Engine::CreateOutputMix called");
+            /* Write fake output mix handle */
+            if (cpu->r[1] && cpu->r[1] + 4 <= emu->mem_size) {
+                uint32_t fake_mix = 0xA0D10002u;
+                memcpy(emu->mem + cpu->r[1], &fake_mix, 4);
+            }
+            cpu->r[0] = 0; break;
+        }
+        case STUB_SL_ENGINE_CREATEAUDIOPLAYER: {
+            EMU_LOG_DEBUG("Engine::CreateAudioPlayer called");
+            /* Write fake player handle */
+            if (cpu->r[1] && cpu->r[1] + 4 <= emu->mem_size) {
+                uint32_t fake_player = 0xA0D10003u;
+                memcpy(emu->mem + cpu->r[1], &fake_player, 4);
+            }
+            cpu->r[0] = 0; break;
+        }
+        case STUB_SL_ENGINE_GETINTERFACE:
+            EMU_LOG_DEBUG("Engine::GetInterface called");
+            /* Write a fake interface pointer */
+            if (cpu->r[2] && cpu->r[2] + 4 <= emu->mem_size) {
+                uint32_t fake_iface = 0xA0D10010u;
+                memcpy(emu->mem + cpu->r[2], &fake_iface, 4);
+            }
+            cpu->r[0] = 0; break;
+        case STUB_SL_OUTPUTMIX_REALIZE:
+            EMU_LOG_DEBUG("OutputMix::Realize called");
+            cpu->r[0] = 0; break;
+        case STUB_SL_PLAYER_REALIZE:
+            EMU_LOG_DEBUG("Player::Realize called");
+            cpu->r[0] = 0; break;
+        case STUB_SL_PLAYER_GETINTERFACE:
+            EMU_LOG_DEBUG("Player::GetInterface called (iid_ptr=0x%08X, out=0x%08X)", cpu->r[1], cpu->r[2]);
+            if (cpu->r[2] && cpu->r[2] + 4 <= emu->mem_size) {
+                uint32_t fake_iface = 0xA0D10020u;
+                memcpy(emu->mem + cpu->r[2], &fake_iface, 4);
+            }
+            cpu->r[0] = 0; break;
+        case STUB_SL_PLAYER_SETPLAYSTATE: {
+            uint32_t state = cpu->r[1];
+            EMU_LOG_DEBUG("Player::SetPlayState(%u)", state);
+            if (emu->audio) {
+                if (state == 1 /* SL_PLAYSTATE_STOPPED */) {
+                    android_audio_pause(emu->audio);
+                } else if (state == 2 /* SL_PLAYSTATE_PAUSED */) {
+                    android_audio_pause(emu->audio);
+                } else if (state == 3 /* SL_PLAYSTATE_PLAYING */) {
+                    android_audio_play(emu->audio);
+                }
+            }
+            cpu->r[0] = 0; break;
+        }
+        case STUB_SL_BUFFERQUEUE_ENQUEUE: {
+            uint32_t data_va = cpu->r[1];
+            uint32_t data_sz = cpu->r[2];
+            if (emu->audio && data_va && data_sz && BOUNDS_OK(data_va, data_sz)) {
+                android_audio_enqueue(emu->audio, emu->mem + data_va, data_sz);
+            }
+            cpu->r[0] = 0; break;
+        }
+        case STUB_SL_BUFFERQUEUE_REGISTERCALLBACK:
+            EMU_LOG_DEBUG("BufferQueue::RegisterCallback(cb=0x%08X, ctx=0x%08X)", cpu->r[1], cpu->r[2]);
+            /* We don't call back into guest code for buffer completion yet.
+             * A full implementation would store the callback VA and invoke it
+             * by setting PC when a buffer finishes playing. */
+            cpu->r[0] = 0; break;
+        case STUB_SL_BUFFERQUEUE_CLEAR:
+            EMU_LOG_DEBUG("BufferQueue::Clear called");
+            cpu->r[0] = 0; break;
+        case STUB_SL_VOLUME_SETVOLUME:
+            EMU_LOG_DEBUG("Volume::SetVolumeLevel(%d)", (int32_t)cpu->r[1]);
+            cpu->r[0] = 0; break;
+        case STUB_SL_OBJECT_DESTROY:
+            EMU_LOG_DEBUG("Object::Destroy(0x%08X)", cpu->r[0]);
+            cpu->r[0] = 0; break;
 
         /* ==================================================================
          *  Default
@@ -1596,9 +1742,11 @@ static void combined_swi_handler(void *ctx, uint32_t swi_num) {
 #ifdef _DEBUG
         static unsigned syscall_count = 0;
         syscall_count++;
-        if (syscall_count <= 10) {
-            EMU_LOG_DEBUG("syscall dispatch: swi=%u (call #%u, pc=0x%08X)",
-                          swi_num, syscall_count, emu->cpu.r[15]);
+        if (syscall_count <= 20 || (syscall_count % 10000) == 0) {
+            uint32_t r7 = emu->cpu.r[7]; /* ARM EABI: syscall # in r7 */
+            EMU_LOG_DEBUG("syscall dispatch: swi=%u r7=%u (call #%u, pc=0x%08X sp=0x%08X lr=0x%08X)",
+                          swi_num, r7, syscall_count,
+                          emu->cpu.r[15], emu->cpu.r[13], emu->cpu.r[ARM_LR]);
         }
 #endif
         android_syscall_dispatch(&emu->cpu, &emu->syscall_state, swi_num);
@@ -1690,11 +1838,14 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
             android_linker_add_override(&emu->linker, stub_names[i], stub_va);
         } else {
             install_stub(emu->mem, stub_va, i);
-            android_linker_add_override(&emu->linker, stub_names[i], stub_va | 1u);
+            /* ARM-mode stubs: do NOT set bit 0 (Thumb flag).
+             * BX/BLX from Thumb code will switch to ARM mode to execute
+             * the SWI, then BX LR switches back to the caller's mode. */
+            android_linker_add_override(&emu->linker, stub_names[i], stub_va);
         }
     }
     EMU_LOG_DEBUG("init: installed %u bionic stubs (%s encoding)",
-                  STUB_COUNT - 1, emu->is_arm64 ? "A64" : "Thumb");
+                  STUB_COUNT - 1, emu->is_arm64 ? "A64" : "ARM SWI");
 
     /* Install data symbols: these are not trampolines but reserved memory
      * locations that native code reads as global variables. */
@@ -1740,13 +1891,21 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
          * We install a stub that returns 0 (no exception tables). */
         {
             uint32_t stub_va = BIONIC_STUB_BASE + STUB_COUNT * BIONIC_STUB_STRIDE;
-            /* Install a simple trampoline that returns 0 in r0 */
-            uint16_t mov_r0_0 = 0x2000; /* MOV r0, #0 */
-            uint16_t bx_lr    = 0x4770;  /* BX LR */
-            memcpy(emu->mem + stub_va, &mov_r0_0, 2);
-            memcpy(emu->mem + stub_va + 2, &bx_lr, 2);
-            android_linker_add_override(&emu->linker, "__gnu_Unwind_Find_exidx",
-                                        emu->is_arm64 ? stub_va : (stub_va | 1u));
+            if (emu->is_arm64) {
+                /* AArch64: MOV X0, #0; RET */
+                uint32_t mov_x0_0 = 0xD2800000u; /* MOV X0, #0 */
+                uint32_t ret      = 0xD65F03C0u;  /* RET */
+                memcpy(emu->mem + stub_va,     &mov_x0_0, 4);
+                memcpy(emu->mem + stub_va + 4, &ret,      4);
+                android_linker_add_override(&emu->linker, "__gnu_Unwind_Find_exidx", stub_va);
+            } else {
+                /* ARM mode: MOV R0, #0; BX LR */
+                uint32_t mov_r0_0 = 0xE3A00000u; /* MOV R0, #0 */
+                uint32_t bx_lr    = 0xE12FFF1Eu;  /* BX LR */
+                memcpy(emu->mem + stub_va,     &mov_r0_0, 4);
+                memcpy(emu->mem + stub_va + 4, &bx_lr,    4);
+                android_linker_add_override(&emu->linker, "__gnu_Unwind_Find_exidx", stub_va);
+            }
         }
 
         /* SL_IID_* OpenSL ES interface IDs (16-byte UUIDs each, all zeros = stub) */
@@ -1951,10 +2110,10 @@ bool android_emulator_step(AndroidEmulator *emu, unsigned max_instructions) {
 #ifdef _DEBUG
         static unsigned step_call_count = 0;
         step_call_count++;
-        if (step_call_count <= 3) {
-            EMU_LOG_DEBUG("step[%u]: executed %u/%u instructions, running=%d frame_ready=%d pc=0x%08X",
+        if (step_call_count <= 5 || (step_call_count % 60 == 0 && step_call_count <= 600)) {
+            EMU_LOG_DEBUG("step[%u]: executed %u/%u instructions, running=%d frame_ready=%d pc=0x%08X sp=0x%08X",
                           step_call_count, i, max_instructions,
-                          emu->cpu.running, emu->frame_ready, emu->cpu.r[15]);
+                          emu->cpu.running, emu->frame_ready, emu->cpu.r[15], emu->cpu.r[13]);
         }
 #endif
         return emu->cpu.running;
@@ -2081,6 +2240,10 @@ void android_emulator_gamepad(AndroidEmulator *emu,
  * ---------------------------------------------------------------------- */
 
 void android_emulator_destroy(AndroidEmulator *emu) {
+    if (emu->audio) {
+        android_audio_destroy(emu->audio);
+        emu->audio = NULL;
+    }
     if (emu->gles1) {
         gles1_destroy(emu->gles1);
         emu->gles1 = NULL;

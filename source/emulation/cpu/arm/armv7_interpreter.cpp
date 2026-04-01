@@ -19,7 +19,31 @@
 /* MSVC does not provide __builtin_popcount; use the intrinsic instead */
 #ifdef _MSC_VER
 #include <intrin.h>
+#include <windows.h>
+#include <stdarg.h>
 #define __builtin_popcount __popcnt
+#endif
+
+/* -------------------------------------------------------------------------
+ * Debug logging for the ARM interpreter.
+ * On MSVC, use OutputDebugStringA so messages appear in VS Output window.
+ * ---------------------------------------------------------------------- */
+#if defined(_DEBUG) || !defined(NDEBUG)
+#  if defined(_MSC_VER)
+     static inline void _arm_dbg(const char *fmt, ...) {
+         char buf[512];
+         va_list ap;
+         va_start(ap, fmt);
+         vsnprintf(buf, sizeof(buf), fmt, ap);
+         va_end(ap);
+         OutputDebugStringA(buf);
+     }
+#    define ARM_LOG_DEBUG(fmt, ...) _arm_dbg("[ARM DEBUG] " fmt "\n", ##__VA_ARGS__)
+#  else
+#    define ARM_LOG_DEBUG(fmt, ...) fprintf(stderr, "[ARM DEBUG] " fmt "\n", ##__VA_ARGS__)
+#  endif
+#else
+#  define ARM_LOG_DEBUG(fmt, ...) ((void)0)
 #endif
 
 /* =========================================================================
@@ -264,6 +288,34 @@ static void exec_arm_bx(ArmV7State *cpu, uint32_t instr) {
     bool     blx = ((instr >> 4) & 0xF) == 3; /* BLX vs BX */
     uint32_t target = cpu->r[rm];
     if (blx) cpu->r[ARM_LR] = cpu->r[ARM_PC];
+
+#if defined(_DEBUG) || !defined(NDEBUG)
+    /* Log branches to address 0 (halt sentinel) and mode switches */
+    if (target == 0) {
+        ARM_LOG_DEBUG("BX to 0x00000000 — halting (from pc=0x%08X, lr=0x%08X)",
+                      cpu->r[ARM_PC], cpu->r[ARM_LR]);
+        cpu->running = false;
+        return;
+    }
+    {
+        static unsigned bx_log_count = 0;
+        bx_log_count++;
+        bool mode_switch = ((target & 1) != 0) != is_thumb(cpu);
+        if (bx_log_count <= 30 || mode_switch) {
+            ARM_LOG_DEBUG("BX%s R%u=0x%08X %s->%s (from pc=0x%08X, #%u)",
+                          blx ? "L" : "", rm, target,
+                          is_thumb(cpu) ? "Thumb" : "ARM",
+                          (target & 1) ? "Thumb" : "ARM",
+                          cpu->r[ARM_PC], bx_log_count);
+        }
+    }
+#else
+    if (target == 0) {
+        cpu->running = false;
+        return;
+    }
+#endif
+
     if (target & 1) {
         cpu->cpsr |= ARM_CPSR_T;
         cpu->r[ARM_PC] = target & ~1u;
@@ -568,8 +620,31 @@ static void exec_thumb16(ArmV7State *cpu, uint16_t instr) {
                 unsigned Rd = ((instr >> 4) & 8) | (instr & 7);
                 if (hi_op == 3) {
                     /* BX/BLX */
-                    if ((instr >> 7) & 1) cpu->r[ARM_LR] = cpu->r[ARM_PC]; /* BLX */
+                    bool is_blx = (instr >> 7) & 1;
+                    if (is_blx) cpu->r[ARM_LR] = cpu->r[ARM_PC]; /* BLX */
                     uint32_t target = cpu->r[Rm];
+#if defined(_DEBUG) || !defined(NDEBUG)
+                    if (target == 0) {
+                        ARM_LOG_DEBUG("Thumb BX to 0x00000000 — halting (from pc=0x%08X, lr=0x%08X)",
+                                      cpu->r[ARM_PC], cpu->r[ARM_LR]);
+                        cpu->running = false;
+                        break;
+                    }
+                    {
+                        static unsigned thumb_bx_count = 0;
+                        thumb_bx_count++;
+                        bool mode_sw = ((target & 1) != 0) != is_thumb(cpu);
+                        if (thumb_bx_count <= 30 || mode_sw) {
+                            ARM_LOG_DEBUG("Thumb BX%s R%u=0x%08X %s->%s (from pc=0x%08X, #%u)",
+                                          is_blx ? "L" : "", Rm, target,
+                                          is_thumb(cpu) ? "Thumb" : "ARM",
+                                          (target & 1) ? "Thumb" : "ARM",
+                                          cpu->r[ARM_PC], thumb_bx_count);
+                        }
+                    }
+#else
+                    if (target == 0) { cpu->running = false; break; }
+#endif
                     if (target & 1) { cpu->cpsr |=  ARM_CPSR_T; cpu->r[ARM_PC] = target & ~1u; }
                     else            { cpu->cpsr &= ~ARM_CPSR_T; cpu->r[ARM_PC] = target & ~3u; }
                 } else {

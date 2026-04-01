@@ -398,9 +398,11 @@ static bool apply_relocations(LinkerContext *ctx, LoadedLib *lib,
 
         /* Get symbol address if needed */
         uint32_t sym_va = 0;
+        const char *sym_name_dbg = NULL;
         if (sym_idx && lib->symtab && lib->strtab) {
             const Elf32_Sym *sym = &lib->symtab[sym_idx];
             const char *sym_name = lib->strtab + sym->st_name;
+            sym_name_dbg = sym_name;
             if (sym->st_shndx != 0) {
                 sym_va = lib->load_base + sym->st_value;
             } else {
@@ -409,6 +411,24 @@ static bool apply_relocations(LinkerContext *ctx, LoadedLib *lib,
                     LNK_LOG_ERR("unresolved symbol '%s'", sym_name);
                 }
             }
+#ifdef _DEBUG
+            /* Log first few relocations and any EGL/GL/SL symbols for debugging */
+            {
+                static unsigned reloc_log_count = 0;
+                bool is_interesting = (sym_name[0] == 'e' && sym_name[1] == 'g' && sym_name[2] == 'l') /* egl* */
+                                   || (sym_name[0] == 'g' && sym_name[1] == 'l')  /* gl* */
+                                   || (sym_name[0] == 's' && sym_name[1] == 'l')  /* sl* */
+                                   || (sym_name[0] == 'A' && sym_name[1] == 'N')  /* ANative* */
+                                   || strstr(sym_name, "OnCreate") != NULL
+                                   || strstr(sym_name, "android_main") != NULL
+                                   || strstr(sym_name, "SDL_main") != NULL;
+                if (reloc_log_count < 30 || is_interesting) {
+                    LNK_LOG_DEBUG("reloc: '%s' -> VA 0x%08X (type=%u, target_va=0x%08X)",
+                                  sym_name, sym_va, type, target_va);
+                    reloc_log_count++;
+                }
+            }
+#endif
         }
 
         uint8_t *patch = ctx->mem + target_va;

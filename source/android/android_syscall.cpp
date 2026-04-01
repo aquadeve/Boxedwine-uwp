@@ -167,6 +167,26 @@ void android_syscall_dispatch(ArmV7State *cpu, AndroidSyscallState *state, uint3
     /* uint32_t arg5 = cpu->r[5]; */
     (void)swi_num;
 
+#if defined(_DEBUG) || !defined(NDEBUG)
+    {
+        /* Log first N syscalls and periodically thereafter */
+        static unsigned sc_log_count = 0;
+        sc_log_count++;
+        if (sc_log_count <= 50 || (sc_log_count % 10000) == 0) {
+#if defined(_MSC_VER)
+            char _sc_buf[256];
+            snprintf(_sc_buf, sizeof(_sc_buf),
+                     "[SYS DEBUG] syscall #%u: nr=%u r0=0x%08X r1=0x%08X r2=0x%08X r3=0x%08X pc=0x%08X\n",
+                     sc_log_count, nr, arg0, arg1, arg2, arg3, cpu->r[15]);
+            OutputDebugStringA(_sc_buf);
+#else
+            fprintf(stderr, "[SYS DEBUG] syscall #%u: nr=%u r0=0x%08X r1=0x%08X r2=0x%08X r3=0x%08X pc=0x%08X\n",
+                    sc_log_count, nr, arg0, arg1, arg2, arg3, cpu->r[15]);
+#endif
+        }
+    }
+#endif
+
     switch (nr) {
         /* ------ exit / exit_group ------ */
         case SYS_ARM_exit:

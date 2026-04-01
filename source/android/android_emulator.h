@@ -29,6 +29,7 @@
 #include "android_jni.h"
 #include "android_syscall.h"
 #include "gles1_on_gles2.h"
+#include "android_audio.h"
 #include "../emulation/cpu/arm/armv7_interpreter.h"
 #include "../emulation/cpu/arm/aarch64_interpreter.h"
 
@@ -98,6 +99,9 @@ typedef struct {
 
     /* GL ES 1.x emulation context (owned by this struct) */
     GLES1Context *gles1;
+
+    /* Audio context for OpenSL ES emulation (owned by this struct) */
+    AndroidAudioContext *audio;
 
     /* Set by guest eglSwapBuffers to signal a frame is ready */
     bool frame_ready;

@@ -358,6 +358,7 @@
     <ClCompile Include="..\..\..\..\source\android\android_jni.cpp" />
     <ClCompile Include="..\..\..\..\source\android\android_syscall.cpp" />
     <ClCompile Include="..\..\..\..\source\android\android_env.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_audio.cpp" />
     <ClCompile Include="..\..\..\..\source\emulation\cpu\arm\armv7_interpreter.cpp" />
     <ClCompile Include="..\..\..\..\source\emulation\cpu\arm\aarch64_interpreter.cpp" />
   </ItemGroup>
