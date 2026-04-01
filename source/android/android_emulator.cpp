@@ -161,7 +161,7 @@ static uint16_t mem_r16(void *ctx, uint32_t addr) {
 static uint32_t mem_r32(void *ctx, uint32_t addr) {
     AndroidEmulator *emu = (AndroidEmulator*)ctx;
     uint32_t v = 0;
-    if (addr + 4 <= emu->mem_size) memcpy(&v, emu->mem + addr, 4);
+    if (addr <= emu->mem_size - 4) memcpy(&v, emu->mem + addr, 4);
     return v;
 }
 static void mem_w8(void *ctx, uint32_t addr, uint8_t v) {
