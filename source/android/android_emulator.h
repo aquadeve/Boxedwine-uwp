@@ -105,6 +105,28 @@ typedef struct {
 
     /* Set by guest eglSwapBuffers to signal a frame is ready */
     bool frame_ready;
+
+    /* ---- NativeActivity lifecycle state ---- */
+
+    /* True when entry point is ANativeActivity_onCreate */
+    bool is_native_activity;
+
+    /* Emulated VA of the fake ANativeActivity struct */
+    uint32_t activity_va;
+
+    /* Emulated VA of the ANativeActivityCallbacks struct */
+    uint32_t callbacks_va;
+
+    /* Emulated VA of the fake ANativeWindow struct */
+    uint32_t window_va;
+
+    /* Current lifecycle phase (see LIFECYCLE_PHASE_* constants) */
+    int lifecycle_phase;
+
+    /* Pending pthread_create: saved start routine and argument */
+    uint32_t pending_thread_func;   /* guest VA of thread start_routine */
+    uint32_t pending_thread_arg;    /* guest VA of arg passed to thread */
+    bool     has_pending_thread;
 } AndroidEmulator;
 
 /* -------------------------------------------------------------------------

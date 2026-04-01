@@ -265,6 +265,77 @@ static void mem64_w64(void *ctx, uint64_t addr, uint64_t v) {
 #define BIONIC_STUB_BASE    0x1000u
 #define BIONIC_STUB_STRIDE  8u          /* 8 bytes per stub: SVC imm24 + BX LR */
 
+/* ---- NativeActivity memory layout ---- */
+#define NACT_REGION_BASE     0x3000u    /* NativeActivity structures base */
+#define NACT_ACTIVITY_VA     0x3000u    /* ANativeActivity struct (64 bytes) */
+#define NACT_CALLBACKS_VA    0x3040u    /* ANativeActivityCallbacks (64 bytes = 16 ptrs) */
+#define NACT_JAVAVM_PTR_VA   0x3080u    /* JavaVM* : pointer to invoke_iface_va (4 bytes) */
+#define NACT_INVOKE_IFACE_VA 0x3084u    /* JNIInvokeInterface: 7 entries x 4 = 28 bytes */
+#define NACT_JNIENV_PTR_VA   0x30A0u    /* JNIEnv*: pointer to jni_iface_va (4 bytes) */
+#define NACT_JNI_IFACE_VA    0x30A4u    /* JNINativeInterface_: ~230 entries x 4 */
+#define NACT_DATA_PATH_VA    0x3500u    /* internalDataPath string (128 bytes) */
+#define NACT_EXT_PATH_VA     0x3580u    /* externalDataPath string (128 bytes) */
+#define NACT_WINDOW_VA       0x3600u    /* ANativeWindow fake struct (16 bytes) */
+
+/* Lifecycle trampoline ARM stubs (SWI + BX LR, 8 bytes each) */
+#define LIFECYCLE_TRAMP_BASE 0x3800u
+#define LIFECYCLE_SWI_BASE   0x6000u    /* SWI immediate range for lifecycle events */
+
+/* Lifecycle phases */
+#define LIFECYCLE_PHASE_NONE               0
+#define LIFECYCLE_PHASE_ON_CREATE_DONE     1
+#define LIFECYCLE_PHASE_ON_START_DONE      2
+#define LIFECYCLE_PHASE_ON_WINDOW_DONE     3
+#define LIFECYCLE_PHASE_ON_RESUME_DONE     4
+#define LIFECYCLE_PHASE_RUNNING            5
+
+/* ANativeActivity struct offsets (32-bit ARM) */
+#define NACT_OFF_CALLBACKS         0   /* ANativeActivityCallbacks* */
+#define NACT_OFF_VM                4   /* JavaVM* */
+#define NACT_OFF_ENV               8   /* JNIEnv* */
+#define NACT_OFF_CLAZZ            12   /* jobject */
+#define NACT_OFF_INTERNAL_PATH    16   /* const char* */
+#define NACT_OFF_EXTERNAL_PATH    20   /* const char* */
+#define NACT_OFF_SDK_VERSION      24   /* int32_t */
+#define NACT_OFF_INSTANCE         28   /* void* */
+#define NACT_OFF_ASSET_MANAGER    32   /* AAssetManager* */
+#define NACT_OFF_OBB_PATH         36   /* const char* */
+
+/* ANativeActivityCallbacks offsets (each is a function pointer = 4 bytes) */
+#define NACB_OFF_ON_START          0
+#define NACB_OFF_ON_RESUME         4
+#define NACB_OFF_ON_SAVE           8
+#define NACB_OFF_ON_PAUSE         12
+#define NACB_OFF_ON_STOP          16
+#define NACB_OFF_ON_DESTROY       20
+#define NACB_OFF_ON_FOCUS_CHANGED 24
+#define NACB_OFF_ON_WINDOW_CREATED 28
+#define NACB_OFF_ON_WINDOW_RESIZED 32
+#define NACB_OFF_ON_WINDOW_REDRAW  36
+#define NACB_OFF_ON_WINDOW_DESTROYED 40
+#define NACB_OFF_ON_INPUT_CREATED  44
+#define NACB_OFF_ON_INPUT_DESTROYED 48
+#define NACB_OFF_ON_RECT_CHANGED   52
+#define NACB_OFF_ON_CONFIG_CHANGED 56
+#define NACB_OFF_ON_LOW_MEMORY     60
+
+/* JavaVM invoke interface offsets */
+#define JVM_OFF_RESERVED0          0
+#define JVM_OFF_RESERVED1          4
+#define JVM_OFF_RESERVED2          8
+#define JVM_OFF_DESTROY_VM        12
+#define JVM_OFF_ATTACH_THREAD     16
+#define JVM_OFF_DETACH_THREAD     20
+#define JVM_OFF_GET_ENV           24
+#define JVM_OFF_ATTACH_DAEMON     28
+
+/* SWI numbers for JVM/lifecycle traps */
+#define SWI_LIFECYCLE_BASE         0x6000u
+#define SWI_JVM_ATTACH_THREAD      0x5001u
+#define SWI_JVM_DETACH_THREAD      0x5002u
+#define SWI_JVM_GET_ENV            0x5003u
+#define SWI_JVM_DESTROY            0x5004u
+
 /* Stub index for each bionic function.
  * Each entry gets a Thumb SVC+BX LR trampoline at a fixed VA. */
 enum BionicStub {
@@ -1135,7 +1206,27 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
         /* ==================================================================
          *  pthread (single-threaded emulation: all return success / no-op)
          * ================================================================== */
-        case STUB_PTHREAD_CREATE:
+        case STUB_PTHREAD_CREATE: {
+            /* pthread_create(thread*, attr*, start_routine, arg)
+             * r0=thread*, r1=attr*, r2=start_routine, r3=arg
+             * Save the thread function for deferred execution after lifecycle. */
+            uint32_t start_routine = cpu->r[2];
+            uint32_t arg = cpu->r[3];
+            if (start_routine && !emu->has_pending_thread) {
+                emu->pending_thread_func = start_routine;
+                emu->pending_thread_arg  = arg;
+                emu->has_pending_thread  = true;
+                EMU_LOG_DEBUG("pthread_create: saved pending thread func=0x%08X arg=0x%08X",
+                              start_routine, arg);
+            }
+            /* Write a fake thread ID to *thread if pointer is valid */
+            if (cpu->r[0] && cpu->r[0] + 4 <= emu->mem_size) {
+                uint32_t fake_tid = 0x1001u;
+                memcpy(emu->mem + cpu->r[0], &fake_tid, 4);
+            }
+            cpu->r[0] = 0; /* success */
+            break;
+        }
         case STUB_PTHREAD_JOIN:
         case STUB_PTHREAD_MUTEX_LOCK:
         case STUB_PTHREAD_MUTEX_UNLOCK:
@@ -1175,7 +1266,19 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
         case STUB_WRITE_POSIX:
         case STUB_LSEEK_POSIX:
         case STUB_FCNTL:
-        case STUB_PIPE:
+        case STUB_PIPE: {
+            /* pipe(int fds[2]): create a fake pipe pair.
+             * r0 = pointer to int[2] in emulated memory.
+             * We return fake FDs 100 and 101. */
+            uint32_t fds_va = cpu->r[0];
+            if (fds_va && fds_va + 8 <= emu->mem_size) {
+                uint32_t fd_read = 100, fd_write = 101;
+                memcpy(emu->mem + fds_va,     &fd_read,  4);
+                memcpy(emu->mem + fds_va + 4, &fd_write, 4);
+            }
+            cpu->r[0] = 0; /* success */
+            break;
+        }
         case STUB_REMOVE:
         case STUB_RENAME:
         case STUB_MKDIR:
@@ -1729,11 +1832,44 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
 #undef BOUNDS_OK
 }
 
-/* Combined SWI dispatcher: bionic stubs have IDs < STUB_COUNT */
+/* Combined SWI dispatcher: bionic stubs have IDs < STUB_COUNT,
+ * lifecycle events use SWI_LIFECYCLE_BASE range,
+ * JavaVM stubs use SWI_JVM_* range. */
+static void lifecycle_advance(AndroidEmulator *emu);
 static void combined_swi_handler(void *ctx, uint32_t swi_num) {
     AndroidEmulator *emu = (AndroidEmulator*)ctx;
     if (swi_num > 0 && swi_num < STUB_COUNT) {
         bionic_stub_dispatch(emu, swi_num);
+    } else if (swi_num >= SWI_LIFECYCLE_BASE && swi_num < SWI_LIFECYCLE_BASE + 0x100) {
+        /* Lifecycle trampoline returned — advance to next phase */
+        unsigned phase = swi_num - SWI_LIFECYCLE_BASE;
+        EMU_LOG_DEBUG("lifecycle SWI: phase=%u (current=%d)", phase, emu->lifecycle_phase);
+        emu->lifecycle_phase = (int)phase;
+        lifecycle_advance(emu);
+    } else if (swi_num == SWI_JVM_ATTACH_THREAD) {
+        /* JavaVM->AttachCurrentThread(vm, &env, args):
+         * r0=JavaVM*, r1=JNIEnv** (out), r2=args (ignored)
+         * Writes JNIEnv* to *r1, returns JNI_OK (0). */
+        uint32_t env_out_va = emu->cpu.r[1];
+        if (env_out_va + 4 <= emu->mem_size) {
+            uint32_t env_ptr = NACT_JNIENV_PTR_VA;
+            memcpy(emu->mem + env_out_va, &env_ptr, 4);
+        }
+        emu->cpu.r[0] = 0; /* JNI_OK */
+        EMU_LOG_DEBUG("JVM AttachCurrentThread: env_out=0x%08X -> JNIEnv=0x%08X", env_out_va, NACT_JNIENV_PTR_VA);
+    } else if (swi_num == SWI_JVM_DETACH_THREAD) {
+        emu->cpu.r[0] = 0; /* JNI_OK */
+    } else if (swi_num == SWI_JVM_GET_ENV) {
+        /* JavaVM->GetEnv(vm, &env, version):
+         * r0=JavaVM*, r1=void** (out), r2=version */
+        uint32_t env_out_va = emu->cpu.r[1];
+        if (env_out_va + 4 <= emu->mem_size) {
+            uint32_t env_ptr = NACT_JNIENV_PTR_VA;
+            memcpy(emu->mem + env_out_va, &env_ptr, 4);
+        }
+        emu->cpu.r[0] = 0; /* JNI_OK */
+    } else if (swi_num == SWI_JVM_DESTROY) {
+        emu->cpu.r[0] = 0;
     } else {
 #ifdef _DEBUG
         static unsigned syscall_count = 0;
@@ -1776,6 +1912,244 @@ static void combined_svc_handler_64(void *ctx, uint32_t svc_num) {
                 svc_num, (unsigned long long)emu->cpu64.x[8]);
         emu->cpu64.running = false;
     }
+}
+
+/* -------------------------------------------------------------------------
+ * NativeActivity lifecycle helpers
+ *
+ * When the entry point is ANativeActivity_onCreate, we need to:
+ *  1. Create fake NativeActivity structures in emulated memory
+ *  2. After onCreate returns, drive the Android lifecycle by calling
+ *     the callbacks that the native code registered
+ *  3. Eventually start the pending thread (android_main)
+ * ---------------------------------------------------------------------- */
+
+/* Helper: set ARM PC and LR for calling a guest function.
+ * Sets up LR to a lifecycle trampoline that will advance to next_phase. */
+static void call_guest_func(AndroidEmulator *emu, uint32_t func_va, uint32_t next_phase) {
+    /* Lifecycle trampoline: SWI #(SWI_LIFECYCLE_BASE + next_phase); BX LR
+     * Each trampoline is 8 bytes at LIFECYCLE_TRAMP_BASE + next_phase * 8 */
+    uint32_t tramp_va = LIFECYCLE_TRAMP_BASE + next_phase * 8;
+
+    /* Set LR to the trampoline (no Thumb bit — trampoline is ARM code) */
+    emu->cpu.r[ARM_LR] = tramp_va;
+
+    /* Set PC to the function */
+    if (func_va & 1) {
+        emu->cpu.cpsr |= ARM_CPSR_T;
+        emu->cpu.r[ARM_PC] = func_va & ~1u;
+    } else {
+        emu->cpu.cpsr &= ~ARM_CPSR_T;
+        emu->cpu.r[ARM_PC] = func_va;
+    }
+}
+
+/* Read a 32-bit value from emulated memory */
+static uint32_t emu_read32(AndroidEmulator *emu, uint32_t va) {
+    uint32_t v = 0;
+    if (va + 4 <= emu->mem_size)
+        memcpy(&v, emu->mem + va, 4);
+    return v;
+}
+
+/* Advance NativeActivity lifecycle after a callback returns.
+ * Called from the lifecycle SWI handler. */
+static void lifecycle_advance(AndroidEmulator *emu) {
+    uint32_t cb_va = emu->callbacks_va;
+    uint32_t act_va = emu->activity_va;
+
+    switch (emu->lifecycle_phase) {
+        case LIFECYCLE_PHASE_ON_CREATE_DONE: {
+            /* onCreate returned. Call onStart(activity) if registered. */
+            uint32_t onStart = emu_read32(emu, cb_va + NACB_OFF_ON_START);
+            if (onStart) {
+                EMU_LOG_DEBUG("lifecycle: calling onStart(0x%08X) at VA 0x%08X", act_va, onStart);
+                emu->cpu.r[0] = act_va;
+                call_guest_func(emu, onStart, LIFECYCLE_PHASE_ON_START_DONE);
+            } else {
+                EMU_LOG_DEBUG("lifecycle: no onStart callback, skipping to onNativeWindowCreated");
+                emu->lifecycle_phase = LIFECYCLE_PHASE_ON_START_DONE;
+                lifecycle_advance(emu);
+            }
+            break;
+        }
+        case LIFECYCLE_PHASE_ON_START_DONE: {
+            /* onStart returned. Call onNativeWindowCreated(activity, window). */
+            uint32_t onWindowCreated = emu_read32(emu, cb_va + NACB_OFF_ON_WINDOW_CREATED);
+            if (onWindowCreated) {
+                EMU_LOG_DEBUG("lifecycle: calling onNativeWindowCreated(0x%08X, 0x%08X) at VA 0x%08X",
+                              act_va, emu->window_va, onWindowCreated);
+                emu->cpu.r[0] = act_va;
+                emu->cpu.r[1] = emu->window_va;
+                call_guest_func(emu, onWindowCreated, LIFECYCLE_PHASE_ON_WINDOW_DONE);
+            } else {
+                EMU_LOG_DEBUG("lifecycle: no onNativeWindowCreated callback, skipping to onResume");
+                emu->lifecycle_phase = LIFECYCLE_PHASE_ON_WINDOW_DONE;
+                lifecycle_advance(emu);
+            }
+            break;
+        }
+        case LIFECYCLE_PHASE_ON_WINDOW_DONE: {
+            /* onNativeWindowCreated returned. Call onResume(activity). */
+            uint32_t onResume = emu_read32(emu, cb_va + NACB_OFF_ON_RESUME);
+            if (onResume) {
+                EMU_LOG_DEBUG("lifecycle: calling onResume(0x%08X) at VA 0x%08X", act_va, onResume);
+                emu->cpu.r[0] = act_va;
+                call_guest_func(emu, onResume, LIFECYCLE_PHASE_ON_RESUME_DONE);
+            } else {
+                EMU_LOG_DEBUG("lifecycle: no onResume callback, skipping to running");
+                emu->lifecycle_phase = LIFECYCLE_PHASE_ON_RESUME_DONE;
+                lifecycle_advance(emu);
+            }
+            break;
+        }
+        case LIFECYCLE_PHASE_ON_RESUME_DONE: {
+            /* All lifecycle callbacks done. If there's a pending thread
+             * (from pthread_create in the glue code), start running it. */
+            if (emu->has_pending_thread && emu->pending_thread_func) {
+                EMU_LOG_DEBUG("lifecycle: starting pending thread at VA 0x%08X (arg=0x%08X)",
+                              emu->pending_thread_func, emu->pending_thread_arg);
+                emu->cpu.r[0] = emu->pending_thread_arg;
+                /* Set LR to 0 so when the thread function returns, emulator halts */
+                emu->cpu.r[ARM_LR] = 0;
+                uint32_t func = emu->pending_thread_func;
+                if (func & 1) {
+                    emu->cpu.cpsr |= ARM_CPSR_T;
+                    emu->cpu.r[ARM_PC] = func & ~1u;
+                } else {
+                    emu->cpu.cpsr &= ~ARM_CPSR_T;
+                    emu->cpu.r[ARM_PC] = func;
+                }
+                emu->has_pending_thread = false;
+            } else {
+                EMU_LOG_DEBUG("lifecycle: no pending thread, emulator entering idle");
+                /* No thread to run — emulator will halt on next BX to 0 */
+            }
+            emu->lifecycle_phase = LIFECYCLE_PHASE_RUNNING;
+            break;
+        }
+        default:
+            EMU_LOG_DEBUG("lifecycle: unknown phase %d", emu->lifecycle_phase);
+            break;
+    }
+}
+
+/* Set up the NativeActivity structures in emulated memory.
+ * Creates: ANativeActivity, ANativeActivityCallbacks, JavaVM vtable,
+ * JNIEnv vtable (minimal), lifecycle trampolines, ANativeWindow. */
+static void setup_native_activity(AndroidEmulator *emu) {
+    uint8_t *mem = emu->mem;
+
+    /* Zero the entire NativeActivity region */
+    memset(mem + NACT_REGION_BASE, 0, 0x2000);
+
+    emu->activity_va  = NACT_ACTIVITY_VA;
+    emu->callbacks_va = NACT_CALLBACKS_VA;
+    emu->window_va    = NACT_WINDOW_VA;
+
+    /* --- ANativeActivity struct at NACT_ACTIVITY_VA --- */
+    uint32_t val;
+
+    /* callbacks pointer */
+    val = NACT_CALLBACKS_VA;
+    memcpy(mem + NACT_ACTIVITY_VA + NACT_OFF_CALLBACKS, &val, 4);
+
+    /* vm: pointer-to-pointer (JavaVM* is JNIInvokeInterface**) */
+    /* NACT_JAVAVM_PTR_VA holds a pointer to NACT_INVOKE_IFACE_VA */
+    val = NACT_INVOKE_IFACE_VA;
+    memcpy(mem + NACT_JAVAVM_PTR_VA, &val, 4);
+    val = NACT_JAVAVM_PTR_VA;
+    memcpy(mem + NACT_ACTIVITY_VA + NACT_OFF_VM, &val, 4);
+
+    /* env: pointer-to-pointer (JNIEnv* is JNINativeInterface_**) */
+    val = NACT_JNI_IFACE_VA;
+    memcpy(mem + NACT_JNIENV_PTR_VA, &val, 4);
+    val = NACT_JNIENV_PTR_VA;
+    memcpy(mem + NACT_ACTIVITY_VA + NACT_OFF_ENV, &val, 4);
+
+    /* clazz: fake non-null jobject */
+    val = 0x00000001u;
+    memcpy(mem + NACT_ACTIVITY_VA + NACT_OFF_CLAZZ, &val, 4);
+
+    /* internalDataPath */
+    {
+        const char path[] = "/data/data/com.android.app";
+        memcpy(mem + NACT_DATA_PATH_VA, path, sizeof(path));
+        val = NACT_DATA_PATH_VA;
+        memcpy(mem + NACT_ACTIVITY_VA + NACT_OFF_INTERNAL_PATH, &val, 4);
+    }
+
+    /* externalDataPath */
+    {
+        const char path[] = "/sdcard/Android/data/com.android.app";
+        memcpy(mem + NACT_EXT_PATH_VA, path, sizeof(path));
+        val = NACT_EXT_PATH_VA;
+        memcpy(mem + NACT_ACTIVITY_VA + NACT_OFF_EXTERNAL_PATH, &val, 4);
+    }
+
+    /* sdkVersion */
+    val = 15; /* Android 4.0.3 = API 15 */
+    memcpy(mem + NACT_ACTIVITY_VA + NACT_OFF_SDK_VERSION, &val, 4);
+
+    /* assetManager: use a non-null fake value so the app doesn't skip asset loading */
+    val = 0x00000002u;
+    memcpy(mem + NACT_ACTIVITY_VA + NACT_OFF_ASSET_MANAGER, &val, 4);
+
+    /* --- JavaVM invoke interface (JNIInvokeInterface) at NACT_INVOKE_IFACE_VA --- */
+    /* Each entry is a function pointer (guest VA of ARM stub with SWI).
+     * We install ARM stubs for the critical methods. */
+    {
+        /* reserved0,1,2 = NULL (already zeroed) */
+        /* DestroyJavaVM at offset 12 */
+        uint32_t stub_va = LIFECYCLE_TRAMP_BASE + 0x80; /* use space after lifecycle tramps */
+        install_stub(mem, stub_va, SWI_JVM_DESTROY);
+        val = stub_va;
+        memcpy(mem + NACT_INVOKE_IFACE_VA + JVM_OFF_DESTROY_VM, &val, 4);
+
+        /* AttachCurrentThread at offset 16 */
+        stub_va += 8;
+        install_stub(mem, stub_va, SWI_JVM_ATTACH_THREAD);
+        val = stub_va;
+        memcpy(mem + NACT_INVOKE_IFACE_VA + JVM_OFF_ATTACH_THREAD, &val, 4);
+
+        /* DetachCurrentThread at offset 20 */
+        stub_va += 8;
+        install_stub(mem, stub_va, SWI_JVM_DETACH_THREAD);
+        val = stub_va;
+        memcpy(mem + NACT_INVOKE_IFACE_VA + JVM_OFF_DETACH_THREAD, &val, 4);
+
+        /* GetEnv at offset 24 */
+        stub_va += 8;
+        install_stub(mem, stub_va, SWI_JVM_GET_ENV);
+        val = stub_va;
+        memcpy(mem + NACT_INVOKE_IFACE_VA + JVM_OFF_GET_ENV, &val, 4);
+
+        /* AttachCurrentThreadAsDaemon at offset 28 — same as AttachCurrentThread */
+        stub_va += 8;
+        install_stub(mem, stub_va, SWI_JVM_ATTACH_THREAD);
+        val = stub_va;
+        memcpy(mem + NACT_INVOKE_IFACE_VA + JVM_OFF_ATTACH_DAEMON, &val, 4);
+    }
+
+    /* --- JNIEnv interface (JNINativeInterface_) at NACT_JNI_IFACE_VA ---
+     * For now, leave as zeros. NativeActivity glue mainly uses JavaVM,
+     * not JNIEnv directly. If the guest calls through JNIEnv vtable,
+     * it will BX to 0x00000000 and halt — we'll add stubs as needed. */
+
+    /* --- Lifecycle trampolines at LIFECYCLE_TRAMP_BASE --- */
+    /* Each trampoline: SWI #(SWI_LIFECYCLE_BASE + phase); BX LR */
+    for (unsigned phase = 0; phase < 16; phase++) {
+        uint32_t tramp_va = LIFECYCLE_TRAMP_BASE + phase * 8;
+        install_stub(mem, tramp_va, SWI_LIFECYCLE_BASE + phase);
+    }
+
+    /* --- ANativeWindow fake struct at NACT_WINDOW_VA ---
+     * Just needs to be non-NULL. Some apps check window != NULL. */
+    val = 1; /* fake refcount */
+    memcpy(mem + NACT_WINDOW_VA, &val, 4);
+
+    EMU_LOG_DEBUG("init: NativeActivity structures set up (activity=0x%08X, callbacks=0x%08X, window=0x%08X)",
+                  NACT_ACTIVITY_VA, NACT_CALLBACKS_VA, NACT_WINDOW_VA);
 }
 
 /* -------------------------------------------------------------------------
@@ -1991,6 +2365,7 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     /* Locate entry point: prefer "ANativeActivity_onCreate", then "android_main",
      * then "Java_*_nativeInit", then the first library's entry point. */
     uint32_t entry = 0;
+    const char *found_entry_name = NULL;
     const char *entry_names[] = {
         "ANativeActivity_onCreate",
         "android_main",
@@ -2001,9 +2376,11 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     };
     for (int ei = 0; entry_names[ei] && !entry; ei++) {
         entry = android_linker_lookup(&emu->linker, entry_names[ei]);
+        if (entry) found_entry_name = entry_names[ei];
     }
     if (!entry && emu->linker.lib_count > 0) {
         entry = emu->linker.libs[0].entry_va;
+        found_entry_name = "(ELF entry)";
     }
 
     if (!entry) {
@@ -2013,30 +2390,19 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     }
 
     if (config->verbosity >= 1)
-        EMU_LOG_INFO("entry point at VA 0x%08X (%s mode)",
+        EMU_LOG_INFO("entry point '%s' at VA 0x%08X (%s mode)",
+                found_entry_name ? found_entry_name : "?",
                 entry, emu->is_arm64 ? "AArch64" : "ARMv7");
 
-    /* Set up fake argc/argv on stack */
-    const char fake_argv0[] = "/data/app/com.android.app/base.apk";
-    uint32_t argv0_va = stack_top - (uint32_t)sizeof(fake_argv0);
-    memcpy(emu->mem + argv0_va, fake_argv0, sizeof(fake_argv0));
-    stack_top = argv0_va - 16;
-    uint32_t argc = 1, argv_va = stack_top + 4;
-    memcpy(emu->mem + stack_top,     &argc,    4);
-    memcpy(emu->mem + argv_va,       &argv0_va, 4);
-    uint32_t null_ptr = 0;
-    memcpy(emu->mem + argv_va + 4,   &null_ptr, 4); /* NULL terminator */
+    /* Detect NativeActivity entry point */
+    emu->is_native_activity = (found_entry_name &&
+                               strcmp(found_entry_name, "ANativeActivity_onCreate") == 0);
 
-    if (emu->is_arm64) {
-        /* AArch64: PC = entry (no Thumb bit), args in X0/X1 */
-        emu->cpu64.pc = (uint64_t)entry;
-        emu->cpu64.sp = (uint64_t)stack_top;
-        emu->cpu64.x[0] = (uint64_t)argc;
-        emu->cpu64.x[1] = (uint64_t)argv_va;
-        /* Set X30 (LR) to 0 so RET halts */
-        emu->cpu64.x[AARCH64_LR] = 0;
-    } else {
-        /* ARMv7: Set PC; Thumb if bit 0 set */
+    if (emu->is_native_activity && !emu->is_arm64) {
+        /* Set up fake NativeActivity structures in emulated memory */
+        setup_native_activity(emu);
+
+        /* ANativeActivity_onCreate(activity, savedState, savedStateSize) */
         if (entry & 1) {
             emu->cpu.cpsr |= ARM_CPSR_T;
             emu->cpu.r[ARM_PC] = entry & ~1u;
@@ -2044,8 +2410,49 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
             emu->cpu.r[ARM_PC] = entry;
         }
         emu->cpu.r[ARM_SP] = stack_top;
-        emu->cpu.r[0] = argc;
-        emu->cpu.r[1] = argv_va;
+        emu->cpu.r[0] = NACT_ACTIVITY_VA;  /* ANativeActivity* activity */
+        emu->cpu.r[1] = 0;                  /* void* savedState = NULL */
+        emu->cpu.r[2] = 0;                  /* size_t savedStateSize = 0 */
+
+        /* Set LR to lifecycle trampoline for phase ON_CREATE_DONE */
+        emu->cpu.r[ARM_LR] = LIFECYCLE_TRAMP_BASE + LIFECYCLE_PHASE_ON_CREATE_DONE * 8;
+        emu->lifecycle_phase = LIFECYCLE_PHASE_NONE;
+
+        EMU_LOG_DEBUG("init: NativeActivity entry — r0=activity(0x%08X) r1=0 r2=0 LR=tramp(0x%08X)",
+                      NACT_ACTIVITY_VA, emu->cpu.r[ARM_LR]);
+    } else {
+        /* Non-NativeActivity entry: pass argc/argv as before */
+        /* Set up fake argc/argv on stack */
+        const char fake_argv0[] = "/data/app/com.android.app/base.apk";
+        uint32_t argv0_va = stack_top - (uint32_t)sizeof(fake_argv0);
+        memcpy(emu->mem + argv0_va, fake_argv0, sizeof(fake_argv0));
+        stack_top = argv0_va - 16;
+        uint32_t argc = 1, argv_va = stack_top + 4;
+        memcpy(emu->mem + stack_top,     &argc,    4);
+        memcpy(emu->mem + argv_va,       &argv0_va, 4);
+        uint32_t null_ptr = 0;
+        memcpy(emu->mem + argv_va + 4,   &null_ptr, 4); /* NULL terminator */
+
+        if (emu->is_arm64) {
+            /* AArch64: PC = entry (no Thumb bit), args in X0/X1 */
+            emu->cpu64.pc = (uint64_t)entry;
+            emu->cpu64.sp = (uint64_t)stack_top;
+            emu->cpu64.x[0] = (uint64_t)argc;
+            emu->cpu64.x[1] = (uint64_t)argv_va;
+            /* Set X30 (LR) to 0 so RET halts */
+            emu->cpu64.x[AARCH64_LR] = 0;
+        } else {
+            /* ARMv7: Set PC; Thumb if bit 0 set */
+            if (entry & 1) {
+                emu->cpu.cpsr |= ARM_CPSR_T;
+                emu->cpu.r[ARM_PC] = entry & ~1u;
+            } else {
+                emu->cpu.r[ARM_PC] = entry;
+            }
+            emu->cpu.r[ARM_SP] = stack_top;
+            emu->cpu.r[0] = argc;
+            emu->cpu.r[1] = argv_va;
+        }
     }
 
     emu->initialised = true;
