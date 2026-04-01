@@ -37,13 +37,21 @@ You must place them under `project\msvc\BoxedWine\deps\` before building:
 
 | Path | Source |
 |---|---|
-| `deps\bin\SDL2.dll` | [aerisarn/sdl-uwp-gl](https://github.com/aerisarn/sdl-uwp-gl) – build the **VisualC-WinRT** project for the target platform |
+| `deps\bin\SDL2.dll` | Build from `lib\sdl2\VisualC-WinRT\UWP_VS2015\SDL-UWP.sln` (standard SDL2 with EGL/ANGLE support) |
 | `deps\bin\z-1.dll` | zlib – can be obtained from the zlib project or a MinGW package |
 | `deps\lib\SDL2.lib` | Import library for the SDL2 DLL above |
 | `deps\lib\z.lib` | Import library for zlib |
-| `deps\include\SDL2\` | SDL2 headers |
+| `deps\include\SDL2\` | SDL2 headers (included in `deps\include\SDL2\`) |
 | `deps\include\KHR\` | Khronos EGL/platform headers |
 | `deps\pointer_arrow.png` | Custom cursor image used by the UWP renderer |
+
+> **Important:** SDL2 must be built with **EGL/OpenGL ES 2.0** support for the ANGLE rendering
+> pipeline.  The `SDL_config_winrt.h` header in `deps\include\SDL2\` defines
+> `SDL_VIDEO_OPENGL_EGL 1` and `SDL_VIDEO_OPENGL_ES2 1`.  Do **not** enable
+> `SDL_VIDEO_OPENGL_WGL` — desktop OpenGL (`opengl32.dll`) is not available on UWP.
+> The standard SDL2 WinRT build in `lib\sdl2\VisualC-WinRT\UWP_VS2015\` already uses
+> the correct settings.  Previous builds from the `aerisarn/sdl-uwp-gl` fork targeted
+> Mesa and will not work.
 
 ### ANGLE (D3D11 → OpenGL ES translation)
 
