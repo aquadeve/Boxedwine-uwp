@@ -14,6 +14,11 @@ LIBAPI void uwp_GetLocalDirectory(char* buffer);
 LIBAPI void uwp_PickAFile(char* buffer);
 LIBAPI void uwp_PickAFolder(char* buffer);
 
+// Copy a file from an arbitrary path into the app's LocalFolder and write the
+// new local path into dest_buffer (256 bytes).  Returns true on success.
+// Needed because UWP's fopen() can only open files inside app data folders.
+LIBAPI bool uwp_CopyFileToLocal(const char* source_path, char* dest_buffer);
+
 // :: Events
 
 // If not using SDL or other helper you must occasionally call this to get anything to show on screen
@@ -24,6 +29,8 @@ LIBAPI void uwp_RegisterGamepadCallbacks(void (*callback)(void));
 
 // :: Threading helpers
 
-// Call this once from the UI thread (e.g. WinMain) before starting the game loop so that
-// file-picker dialogs can be dispatched back to the correct thread.
+// Call this once from the UI thread after CoreApplication::Run() has created
+// the CoreWindow (e.g. at the start of SDL_main) so that file-picker dialogs
+// can be dispatched back to the correct thread.  Do NOT call from WinMain —
+// at that point no CoreWindow exists yet and the call would crash.
 LIBAPI void uwp_CaptureUIDispatcher();

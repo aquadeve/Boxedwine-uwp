@@ -1,69 +1,490 @@
 /*
-    SDL_winrt_main_NonXAML.cpp, placed in the public domain by David Ludwig  3/13/14
-*/
+ * Boxedwine Android Emulator - UWP / Xbox One Entry Point
+ */
 
 #include "SDL2/SDL.h"
+
+#include <windows.h>
 #include <wrl.h>
 
-/* At least one file in any SDL/WinRT app appears to require compilation
-   with C++/CX, otherwise a Windows Metadata file won't get created, and
-   an APPX0702 build error can appear shortly after linking.
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <sstream>
 
-   The following set of preprocessor code forces this file to be compiled
-   as C++/CX, which appears to cause Visual C++ 2012's build tools to
-   create this .winmd file, and will help allow builds of SDL/WinRT apps
-   to proceed without error.
-
-   If other files in an app's project enable C++/CX compilation, then it might
-   be possible for SDL_winrt_main_NonXAML.cpp to be compiled without /ZW,
-   for Visual C++'s build tools to create a winmd file, and for the app to
-   build without APPX0702 errors.  In this case, if
-   SDL_WINRT_METADATA_FILE_AVAILABLE is defined as a C/C++ macro, then
-   the #error (to force C++/CX compilation) will be disabled.
-
-   Please note that /ZW can be specified on a file-by-file basis.  To do this,
-   right click on the file in Visual C++, click Properties, then change the
-   setting through the dialog that comes up.
-*/
-
-/* Prevent MSVC++ from warning about threading models when defining our
-   custom WinMain.  The threading model will instead be set via a direct
-   call to Windows::Foundation::Initialize (rather than via an attributed
-   function).
-
-   To note, this warning (C4447) does not seem to come up unless this file
-   is compiled with C++/CX enabled (via the /ZW compiler flag).
-*/
 #ifdef _MSC_VER
 #pragma warning(disable : 4447)
-#endif
-
-/* Make sure the function to initialize the Windows Runtime gets linked in. */
-#ifdef _MSC_VER
 #pragma comment(lib, "runtimeobject.lib")
 #endif
 
-// Capture the UI-thread dispatcher so that libuwp can later dispatch file-picker
-// dialogs back to the correct thread from the SDL game thread.
+#define GL_GLEXT_PROTOTYPES
+#include <GLES2/gl2.h>
+
+ // Android emulator core
+#include "../../../../source/android/android_emulator.h"
+#include "../../../../source/android/angle_renderer.h"
+
+// Capture the UI-thread dispatcher so libuwp can dispatch file-pickers back
+// to the correct thread from the SDL game thread.
 extern "C" __declspec(dllimport) void uwp_CaptureUIDispatcher();
+extern "C" __declspec(dllimport) void uwp_PickAFile(char* buffer);
+extern "C" __declspec(dllimport) bool uwp_CopyFileToLocal(const char* source_path, char* dest_buffer);
 
-typedef void (*pfnChangeGame)(const char* progname);
-typedef  int (*pfnInit)(int argc, int argv, const char* progname, int bChangeGame, pfnChangeGame func);
-
-static bool m_running = false;
-
-// You can locally declare a SDL_main function or call to a DLL export (mingw works nice for this) 
-int _dead_SDL_main(int argc, char* argv[])
+// -------------------------------------------------------------------------
+// SDL hints must be set before SDL_Init()
+// -------------------------------------------------------------------------
+static void configure_sdl_hints_for_uwp()
 {
-    return 0;
+#ifdef SDL_HINT_OPENGL_ES_DRIVER
+    SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
+#endif
+
+#ifdef SDL_HINT_MOUSE_TOUCH_EVENTS
+    SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
+#endif
+
+#ifdef SDL_HINT_JOYSTICK_HIDAPI_XBOX
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX, "1");
+#endif
+
+#ifdef SDL_HINT_JOYSTICK_HIDAPI_XBOX_ONE
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX_ONE, "1");
+#endif
+
+#ifdef SDL_HINT_VIDEO_WIN_D3DCOMPILER
+    SDL_SetHint(SDL_HINT_VIDEO_WIN_D3DCOMPILER, "d3dcompiler_47.dll");
+#endif
 }
 
-// Entry point into app (Note, SDL doesn't like being init from here you must call SDL_main)
-int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR argv, int argc)
+// -------------------------------------------------------------------------
+// Helper: build a gamepad button bitmask from an SDL_GameController
+// -------------------------------------------------------------------------
+static uint32_t poll_gamepad_buttons(SDL_GameController* gc)
 {
-    // Capture the UI-thread CoreWindow dispatcher before SDL moves execution to a
-    // background thread.  This allows libuwp to show file-picker dialogs correctly.
+    uint32_t mask = 0;
+
+    if (!gc) {
+        return 0;
+    }
+
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_A))             mask |= AGAMEPAD_A;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_B))             mask |= AGAMEPAD_B;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_X))             mask |= AGAMEPAD_X;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_Y))             mask |= AGAMEPAD_Y;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_LEFTSHOULDER))  mask |= AGAMEPAD_L1;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) mask |= AGAMEPAD_R1;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_BACK))          mask |= AGAMEPAD_SELECT;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_START))         mask |= AGAMEPAD_START;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_LEFTSTICK))     mask |= AGAMEPAD_L3;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_RIGHTSTICK))    mask |= AGAMEPAD_R3;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_UP))       mask |= AGAMEPAD_DPAD_UP;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_DOWN))     mask |= AGAMEPAD_DPAD_DOWN;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_LEFT))     mask |= AGAMEPAD_DPAD_LEFT;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_RIGHT))    mask |= AGAMEPAD_DPAD_RIGHT;
+    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_GUIDE))         mask |= AGAMEPAD_GUIDE;
+
+    return mask;
+}
+
+// -------------------------------------------------------------------------
+// SDL_main - called by SDL after the WinRT environment is set up
+// -------------------------------------------------------------------------
+extern "C" int SDL_main(int argc, char* argv[])
+{
     uwp_CaptureUIDispatcher();
 
+    AndroidEmulatorConfig config = {};
+    config.screen_width = 1280;
+    config.screen_height = 720;
+#if defined(_DEBUG)
+    config.verbosity = 3;  /* Maximum verbosity in debug builds */
+#else
+    config.verbosity = 2;
+#endif
+    config.apk_path = nullptr;
+    config.main_lib = nullptr;
+    config.data_dir = nullptr;
+
+    for (int i = 1; i < argc; i++) {
+        if ((std::strcmp(argv[i], "--apk") == 0 || std::strcmp(argv[i], "-apk") == 0) && i + 1 < argc) {
+            config.apk_path = argv[++i];
+        }
+        else if (std::strcmp(argv[i], "--width") == 0 && i + 1 < argc) {
+            config.screen_width = std::atoi(argv[++i]);
+        }
+        else if (std::strcmp(argv[i], "--height") == 0 && i + 1 < argc) {
+            config.screen_height = std::atoi(argv[++i]);
+        }
+        else if (std::strcmp(argv[i], "--lib") == 0 && i + 1 < argc) {
+            config.main_lib = argv[++i];
+        }
+        else if (std::strcmp(argv[i], "--data") == 0 && i + 1 < argc) {
+            config.data_dir = argv[++i];
+        }
+        else if (std::strcmp(argv[i], "--verbose") == 0) {
+            config.verbosity = 3;
+        }
+        else if (std::strcmp(argv[i], "--quiet") == 0) {
+            config.verbosity = 0;
+        }
+        else if (i + 1 == argc && std::strstr(argv[i], ".apk")) {
+            config.apk_path = argv[i];
+        }
+    }
+
+    static char picked_path[256] = {};
+    if (!config.apk_path) {
+        uwp_PickAFile(picked_path);
+        if (picked_path[0] != '\0' && std::strstr(picked_path, ".apk")) {
+            config.apk_path = picked_path;
+        }
+    }
+
+    // For APK paths that came from file activation (argv) rather than the
+    // file picker, copy the file into LocalFolder so that fopen() works
+    // under the UWP sandbox.  uwp_PickAFile already does this internally.
+    static char local_apk_path[256] = {};
+    if (config.apk_path && config.apk_path != picked_path) {
+        if (uwp_CopyFileToLocal(config.apk_path, local_apk_path)) {
+            config.apk_path = local_apk_path;
+        }
+        // If the copy fails (e.g. broadFileSystemAccess not granted),
+        // keep the original path — fopen may still work if the path
+        // is already inside the sandbox.
+    }
+
+    if (!config.apk_path) {
+        SDL_ShowSimpleMessageBox(
+            SDL_MESSAGEBOX_ERROR,
+            "Boxedwine Android",
+            "No APK file specified.\n\n"
+            "Usage: boxedwine-android --apk <path-to.apk>\n\n"
+            "Open an .apk file from File Explorer, or pass the path "
+            "as a command-line argument.",
+            nullptr
+        );
+        return 1;
+    }
+
+    if (config.verbosity >= 1) {
+        SDL_Log("Boxedwine Android Emulator starting...");
+        SDL_Log("APK: %s", config.apk_path);
+        SDL_Log("Screen: %dx%d", config.screen_width, config.screen_height);
+    }
+
+    configure_sdl_hints_for_uwp();
+
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) < 0) {
+        SDL_Log("SDL_Init failed: %s", SDL_GetError());
+        return 1;
+    }
+
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    /* On UWP, the window is a CoreWindow managed by the system shell.
+     * SDL_WINDOW_FULLSCREEN_DESKTOP is a desktop Win32 concept and should
+     * NOT be used.  The CoreWindow already fills the available screen area.
+     * We just need SDL_WINDOW_OPENGL and let SDL/WinRT handle the rest. */
+    SDL_Window* window = SDL_CreateWindow(
+        "Boxedwine Android",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        config.screen_width, config.screen_height,
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+    );
+
+    if (!window) {
+        SDL_Log("SDL_CreateWindow failed: %s", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    if (!gl_context) {
+        SDL_Log("SDL_GL_CreateContext failed: %s", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    SDL_GL_MakeCurrent(window, gl_context);
+    SDL_GL_SetSwapInterval(1);
+
+    /* On UWP the CoreWindow size may differ from the requested size.
+     * Query the actual window dimensions and set the GL viewport to
+     * stretch rendering to fill the entire window area. */
+    {
+        int actual_w = 0, actual_h = 0;
+        SDL_GetWindowSize(window, &actual_w, &actual_h);
+        if (actual_w > 0 && actual_h > 0) {
+            config.screen_width = actual_w;
+            config.screen_height = actual_h;
+        }
+        glViewport(0, 0, config.screen_width, config.screen_height);
+#if defined(_DEBUG)
+        SDL_Log("[EMU DEBUG] actual window size: %dx%d", config.screen_width, config.screen_height);
+#endif
+    }
+
+    if (config.verbosity >= 1) {
+        SDL_Log("OpenGL ES renderer: %s", (const char*)glGetString(GL_RENDERER));
+        SDL_Log("OpenGL ES version: %s", (const char*)glGetString(GL_VERSION));
+    }
+
+    AngleRenderer* gl_renderer = angle_renderer_create(config.screen_width, config.screen_height);
+    if (!gl_renderer) {
+        SDL_Log("angle_renderer_create failed");
+        SDL_GL_DeleteContext(gl_context);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    SDL_GameController* gamepad = nullptr;
+    for (int i = 0; i < SDL_NumJoysticks(); i++) {
+        if (SDL_IsGameController(i)) {
+            gamepad = SDL_GameControllerOpen(i);
+            if (gamepad) {
+                const char* name = SDL_GameControllerName(gamepad);
+                SDL_Log("Gamepad connected: %s", name ? name : "(unknown)");
+                break;
+            }
+        }
+    }
+
+    float virtual_cursor_x = config.screen_width / 2.0f;
+    float virtual_cursor_y = config.screen_height / 2.0f;
+
+    AndroidEmulator* emu = new AndroidEmulator{};
+#if defined(_DEBUG)
+    SDL_Log("[EMU DEBUG] main: calling android_emulator_init (apk='%s')", config.apk_path);
+#endif
+    if (!android_emulator_init(emu, &config)) {
+#if defined(_DEBUG)
+        SDL_Log("[EMU DEBUG] main: android_emulator_init FAILED");
+#endif
+        SDL_ShowSimpleMessageBox(
+            SDL_MESSAGEBOX_ERROR,
+            "Boxedwine Android",
+            "Failed to initialise Android emulator.\n"
+            "Check that the APK contains ARMv7/ARM64 native libraries.",
+            window
+        );
+        angle_renderer_destroy(gl_renderer);
+        SDL_GL_DeleteContext(gl_context);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    if (config.verbosity >= 1) {
+        SDL_Log("Android emulator initialised successfully");
+    }
+
+#if defined(_DEBUG)
+    SDL_Log("[EMU DEBUG] main: gles1 context = %p", (void*)emu->gles1);
+    SDL_Log("[EMU DEBUG] main: cpu.running = %d, is_arm64 = %d", emu->cpu.running, emu->is_arm64);
+    if (!emu->is_arm64) {
+        SDL_Log("[EMU DEBUG] main: cpu.r[15](pc) = 0x%08X, cpu.r[13](sp) = 0x%08X", emu->cpu.r[15], emu->cpu.r[13]);
+    }
+    SDL_Log("[EMU DEBUG] main: entering main loop (CPU_STEPS_PER_FRAME=%u)", 1000000u);
+#endif
+
+    bool quit = false;
+    const unsigned CPU_STEPS_PER_FRAME = 1000000;
+    const float CURSOR_SPEED = 10.0f;
+    const int16_t STICK_DEADZONE = 8000;
+
+#if defined(_DEBUG)
+    unsigned total_frames = 0;
+    unsigned total_steps = 0;
+    unsigned frames_with_render = 0;
+#endif
+
+    while (!quit && emu->cpu.running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+            case SDL_QUIT:
+                quit = true;
+                break;
+
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP:
+                android_emulator_touch(
+                    emu,
+                    event.type == SDL_MOUSEBUTTONDOWN ? 0 : 1,
+                    event.button.x,
+                    event.button.y,
+                    0
+                );
+                break;
+
+            case SDL_FINGERDOWN:
+            case SDL_FINGERUP:
+            case SDL_FINGERMOTION: {
+                int action = (event.type == SDL_FINGERDOWN) ? 0 :
+                    (event.type == SDL_FINGERUP) ? 1 : 2;
+                int fx = (int)(event.tfinger.x * config.screen_width);
+                int fy = (int)(event.tfinger.y * config.screen_height);
+                android_emulator_touch(emu, action, fx, fy, (int)event.tfinger.fingerId);
+                break;
+            }
+
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                android_emulator_key(
+                    emu,
+                    event.type == SDL_KEYDOWN ? 0 : 1,
+                    event.key.keysym.sym
+                );
+                break;
+
+            case SDL_CONTROLLERDEVICEADDED:
+                if (!gamepad) {
+                    gamepad = SDL_GameControllerOpen(event.cdevice.which);
+                    if (gamepad && config.verbosity >= 1) {
+                        const char* name = SDL_GameControllerName(gamepad);
+                        SDL_Log("Gamepad connected: %s", name ? name : "(unknown)");
+                    }
+                }
+                break;
+
+            case SDL_CONTROLLERDEVICEREMOVED:
+                if (gamepad &&
+                    event.cdevice.which ==
+                    SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gamepad))) {
+                    SDL_Log("Gamepad disconnected");
+                    SDL_GameControllerClose(gamepad);
+                    gamepad = nullptr;
+                }
+                break;
+
+            case SDL_WINDOWEVENT:
+                if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                    config.screen_width = event.window.data1;
+                    config.screen_height = event.window.data2;
+                    glViewport(0, 0, config.screen_width, config.screen_height);
+#if defined(_DEBUG)
+                    SDL_Log("[EMU DEBUG] window resized to %dx%d", config.screen_width, config.screen_height);
+#endif
+                }
+                break;
+            }
+        }
+
+        if (gamepad) {
+            uint32_t buttons = poll_gamepad_buttons(gamepad);
+            int16_t lx = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_LEFTY);
+            int16_t rx = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_RIGHTX);
+            int16_t ry = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_RIGHTY);
+            int16_t lt = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+            int16_t rt = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+
+            android_emulator_gamepad(emu, buttons, lx, ly, rx, ry, lt, rt);
+
+            if (rx > STICK_DEADZONE || rx < -STICK_DEADZONE) {
+                virtual_cursor_x += (float)rx / 32767.0f * CURSOR_SPEED;
+            }
+            if (ry > STICK_DEADZONE || ry < -STICK_DEADZONE) {
+                virtual_cursor_y += (float)ry / 32767.0f * CURSOR_SPEED;
+            }
+
+            if (virtual_cursor_x < 0) virtual_cursor_x = 0;
+            if (virtual_cursor_y < 0) virtual_cursor_y = 0;
+            if (virtual_cursor_x >= config.screen_width)  virtual_cursor_x = (float)(config.screen_width - 1);
+            if (virtual_cursor_y >= config.screen_height) virtual_cursor_y = (float)(config.screen_height - 1);
+
+            static bool a_was_pressed = false;
+            bool a_pressed = (buttons & AGAMEPAD_A) != 0;
+            if (a_pressed && !a_was_pressed) {
+                android_emulator_touch(emu, 0, (int)virtual_cursor_x, (int)virtual_cursor_y, 0);
+            }
+            if (!a_pressed && a_was_pressed) {
+                android_emulator_touch(emu, 1, (int)virtual_cursor_x, (int)virtual_cursor_y, 0);
+            }
+            a_was_pressed = a_pressed;
+        }
+
+        if (emu->cpu.running) {
+            android_emulator_step(emu, CPU_STEPS_PER_FRAME);
+        }
+
+#if defined(_DEBUG)
+        total_frames++;
+        /* Log periodically (every 60 frames ~ 1 second at 60fps) */
+        if (total_frames <= 5 || (total_frames % 60) == 0) {
+            SDL_Log("[EMU DEBUG] frame %u: cpu.running=%d frame_ready=%d pc=0x%08X sp=0x%08X",
+                    total_frames, emu->cpu.running, emu->frame_ready,
+                    emu->is_arm64 ? 0 : emu->cpu.r[15],
+                    emu->is_arm64 ? 0 : emu->cpu.r[13]);
+        }
+        if (emu->frame_ready) {
+            frames_with_render++;
+            if (frames_with_render <= 3) {
+                SDL_Log("[EMU DEBUG] main: frame_ready=true (rendered frame #%u at loop frame %u)",
+                        frames_with_render, total_frames);
+            }
+        }
+#endif
+
+        /* If the guest called eglSwapBuffers (frame_ready), present the frame.
+         * Otherwise keep stepping — the guest is still setting up. */
+        if (emu->frame_ready) {
+            /* Draw gamepad cursor overlay on top of the guest's rendering */
+            if (gamepad) {
+                angle_renderer_draw_cursor(
+                    gl_renderer,
+                    virtual_cursor_x,
+                    virtual_cursor_y,
+                    config.screen_width,
+                    config.screen_height
+                );
+            }
+
+            SDL_GL_SwapWindow(window);
+        }
+    }
+
+    if (config.verbosity >= 1) {
+        SDL_Log("Android emulator exited with code %d", emu->exit_code);
+    }
+
+#if defined(_DEBUG)
+    SDL_Log("[EMU DEBUG] main: total frames=%u, rendered frames=%u, cpu.running=%d",
+            total_frames, frames_with_render, emu->cpu.running);
+    if (!emu->is_arm64) {
+        SDL_Log("[EMU DEBUG] main: final pc=0x%08X sp=0x%08X",
+                emu->cpu.r[15], emu->cpu.r[13]);
+    }
+#endif
+
+    int exit_code = emu->exit_code;
+
+    android_emulator_destroy(emu);
+    if (gamepad) {
+        SDL_GameControllerClose(gamepad);
+    }
+    angle_renderer_destroy(gl_renderer);
+    SDL_GL_DeleteContext(gl_context);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
+    return exit_code;
+}
+
+// Entry point into UWP / Xbox One app
+int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+{
     return SDL_WinRTRunApp(SDL_main, NULL);
 }

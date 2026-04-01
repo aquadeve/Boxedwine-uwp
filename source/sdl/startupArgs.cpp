@@ -245,6 +245,10 @@ std::vector<BString> StartUpArgs::buildArgs() {
     if (this->disableHideCursor) {
         args.push_back(B("-disableHideCursor"));
     }
+    if (!this->apkPath.isEmpty()) {
+        args.push_back(B("-apk"));
+        args.push_back(this->apkPath);
+    }
     return args;
 }
 
@@ -427,7 +431,7 @@ bool StartUpArgs::apply() {
         }
     }
 
-    if (this->args.size()==0) {
+    if (this->args.size()==0 && this->apkPath.isEmpty()) {
         args.push_back(B("/bin/wine"));
         args.push_back(B("explorer"));
         args.push_back(B("/desktop=shell"));
@@ -754,8 +758,19 @@ bool StartUpArgs::parseStartupArgs(int argc, const char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-disableHideCursor")) {
             this->disableHideCursor = true;
+        } else if (!strcmp(argv[i], "-apk") && i + 1 < argc) {
+            /* Android APK emulation: specify the .apk file to run */
+            this->apkPath = BString::copy(argv[i + 1]);
+            i++;
         } else {
-            break;
+            /* Check if the bare argument is an APK file path */
+            const char *arg = argv[i];
+            size_t arglen = strlen(arg);
+            if (arglen > 4 && strcmp(arg + arglen - 4, ".apk") == 0) {
+                this->apkPath = BString::copy(arg);
+            } else {
+                break;
+            }
         }
     } 
     char curdir[1024];

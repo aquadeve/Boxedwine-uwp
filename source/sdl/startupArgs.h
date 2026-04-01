@@ -40,7 +40,7 @@ public:
     bool loadDefaultResource(const char* app);
     bool parseStartupArgs(int argc, const char **argv);
     bool apply();
-    bool shouldStartUI() {return this->args.size()==0;}
+    bool shouldStartUI() {return this->args.size()==0 && this->apkPath.isEmpty();}
 
     void setWorkingDir(BString path) {this->workingDir = path; this->workingDirSet=true;}
     void setResolution(BString path);
@@ -94,6 +94,9 @@ public:
 
     BString ddrawOverridePath;
     bool disableHideCursor = false;
+
+    /* Android APK emulation: path to the .apk file to run */
+    BString apkPath;
 
 private:
     bool workingDirSet = false;

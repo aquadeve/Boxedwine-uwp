@@ -1,8 +1,30 @@
 #ifndef __BOXEDWINE_H__
 #define __BOXEDWINE_H__
 
-#define BOXEDWINE_VERSION_STR "25R1"
-#define BOXEDWINE_VERSION_DISPLAY "25.0.0 (pre-beta)"
+#define BOXEDWINE_VERSION_STR "25R2"
+#define BOXEDWINE_VERSION_DISPLAY "25.0.0 Android (pre-beta)"
+
+/*
+ * BOXEDWINE_ANDROID: Android APK emulation mode.
+ * When defined, the project targets Android APK native-library execution
+ * via an ARMv7 CPU interpreter and Android Linux kernel emulation.
+ * Wine/x86 emulation is not active in this mode.
+ */
+#define BOXEDWINE_ANDROID 1
+
+/*
+ * BOXEDWINE_XBOX: Auto-detected when targeting Xbox One / Xbox Series via UWP.
+ * On Xbox, the primary input is the gamepad controller.  The emulator maps
+ * Xbox controller buttons to Android KEYCODE_BUTTON_* events and uses the
+ * right stick as a virtual cursor for touch emulation.
+ *
+ * The MSVC predefined macro _GAMING_XBOX_XBOXONE is set when the Xbox GDK
+ * target is selected.  For UWP-only Xbox builds we additionally check
+ * WINAPI_FAMILY_PARTITION.
+ */
+#if defined(_GAMING_XBOX_XBOXONE) || defined(_GAMING_XBOX_SCARLETT)
+#  define BOXEDWINE_XBOX 1
+#endif
 
 #include <vector>
 #include <memory>

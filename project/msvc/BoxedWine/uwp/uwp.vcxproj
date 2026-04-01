@@ -42,8 +42,8 @@
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
     <ApplicationType>Windows Store</ApplicationType>
-    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
-    <WindowsTargetPlatformMinVersion>10.0.17763.0</WindowsTargetPlatformMinVersion>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.19041.0</WindowsTargetPlatformMinVersion>
     <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <ProjectName>uwp</ProjectName>
@@ -148,7 +148,7 @@
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
       <AdditionalIncludeDirectories>$(ProjectDir);$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;BOXEDWINE_UWP_EGL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -161,7 +161,7 @@
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
       <AdditionalIncludeDirectories>$(ProjectDir);$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;BOXEDWINE_UWP_EGL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -174,7 +174,7 @@
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
       <AdditionalIncludeDirectories>$(ProjectDir);$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;BOXEDWINE_UWP_EGL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -187,7 +187,7 @@
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
       <AdditionalIncludeDirectories>$(ProjectDir);$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;BOXEDWINE_UWP_EGL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -219,17 +219,18 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
       <AdditionalDependencies>
-	      		    opengl32.lib;
+	      		    libEGL.lib;
+	      		    libGLESv2.lib;
 	      		    z.lib;
 	      		    SDL2.lib;
-	      		    $(SolutionDir)x64\Release\libuwp\libuwp.lib;
+	      		    $(SolutionDir)x64\Debug\libuwp\libuwp.lib;
 	      		    $(SolutionDir)x64\Debug\BoxedWine.lib;
 	      		    gdi32.lib;
 	      		    ntdll.lib;
 	      		    onecore.lib;
 	      		    WindowsApp.lib;
-			    d3d12.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(SolutionDir)\deps\lib; $(VCInstallDir)\lib\store\amd64; $(VCInstallDir)\lib\amd64</AdditionalLibraryDirectories>
+			    d3d11.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(SolutionDir)x64\Debug\SDL2-UWP;$(SolutionDir)\deps\lib;$(VCInstallDir)\lib\store\amd64;$(VCInstallDir)\lib\amd64;$(ProjectDir)Angle\winrt\10\src\Debug_x64\lib</AdditionalLibraryDirectories>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
@@ -240,18 +241,27 @@
       <AdditionalIncludeDirectories>
 		$(SolutionDir)deps\include;
 		$(ProjectDir);
+		$(ProjectDir)Angle\include;
+		$(ProjectDir)..\..\..\..\source\android;
+		$(ProjectDir)..\..\..\..\source;
+		$(ProjectDir)..\..\..\..\lib\zlib;
+		$(ProjectDir)..\..\..\..\lib\zlib\contrib\minizip;
 		$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;BOXEDWINE_UWP_EGL;GL_GLEXT_PROTOTYPES;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAsWinRT>false</CompileAsWinRT>
     </ClCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
       <AdditionalDependencies>
-			    opengl32.lib;
+			    libEGL.lib;
+			    libGLESv2.lib;
 	      		    z.lib;
 	      		    SDL2.lib;
 	      		    $(SolutionDir)x64\Release\libuwp\libuwp.lib;
@@ -260,9 +270,8 @@
 	      		    ntdll.lib;
 	      		    onecore.lib;
 	      		    WindowsApp.lib;
-			    SDL2.lib; 
-			    d3d12.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(SolutionDir)\deps\lib; $(VCInstallDir)\lib\store\amd64; $(VCInstallDir)\lib\amd64</AdditionalLibraryDirectories>
+			    d3d11.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(SolutionDir)x64\Release\SDL2-UWP;$(SolutionDir)\deps\lib; $(VCInstallDir)\lib\store\amd64; $(VCInstallDir)\lib\amd64; $(ProjectDir)Angle\winrt\10\src\Release_x64\lib</AdditionalLibraryDirectories>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
     </Link>
     <ClCompile>
@@ -271,13 +280,14 @@
       <AdditionalIncludeDirectories>
 	      	      $(SolutionDir)deps\include;
 		      $(ProjectDir);
+		      $(ProjectDir)Angle\include;
+		      $(ProjectDir)..\..\..\..\source\android;
+		      $(ProjectDir)..\..\..\..\source;
+		      $(ProjectDir)..\..\..\..\lib\zlib;
+		      $(ProjectDir)..\..\..\..\lib\zlib\contrib\minizip;
 		      $(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <CompileAsWinRT>false</CompileAsWinRT>
-      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <PreprocessorDefinitions>NDEBUG;BOXEDWINE_UWP_EGL;GL_GLEXT_PROTOTYPES;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -340,6 +350,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\angle_renderer.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\gles1_on_gles2.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_emulator.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\apk_loader.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_linker.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_jni.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_syscall.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_env.cpp" />
+    <ClCompile Include="..\..\..\..\source\android\android_audio.cpp" />
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\arm\armv7_interpreter.cpp" />
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\arm\aarch64_interpreter.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
@@ -347,24 +368,58 @@
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\MeshContentTask.targets" />
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ShaderGraphContentTask.targets" />
   </ImportGroup>
-  <!-- Mesa and SDL deps -->
+  <!-- SDL2 UWP build (from SDL-UWP project) and zlib deps -->
   <ItemGroup>
-    <Content Include="$(SolutionDir)/deps/bin/*.dll">
-      <Link>%(Filename)%(Extension)</Link>
+    <Content Include="$(SolutionDir)$(Platform)\$(Configuration)\SDL2-UWP\SDL2.dll">
+      <Link>SDL2.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(SolutionDir)/deps/bin/z-1.dll">
+      <Link>z-1.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="$(SolutionDir)/deps/pointer_arrow.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <!-- Redist provided by ms / required by mesa gallium -->
+  <!-- ANGLE DLLs (D3D11 -> OpenGL ES translation layer) -->
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Content Include="$(ProjectDir)Angle\winrt\10\src\Debug_x64\libEGL.dll">
+      <Link>libEGL.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(ProjectDir)Angle\winrt\10\src\Debug_x64\libGLESv2.dll">
+      <Link>libGLESv2.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Content Include="$(ProjectDir)Angle\winrt\10\src\Release_x64\libEGL.dll">
+      <Link>libEGL.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(ProjectDir)Angle\winrt\10\src\Release_x64\libGLESv2.dll">
+      <Link>libGLESv2.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <!-- d3dcompiler_47 required by ANGLE's D3D11 backend (from Windows SDK) -->
   <ItemGroup>
-    <Content Include="C:\Program Files (x86)\Windows Kits\10\Redist\D3D\x64\dxil.dll">
+    <Content Include="$(WindowsSdkDir)Redist\D3D\x64\d3dcompiler_47.dll" Condition="Exists('$(WindowsSdkDir)Redist\D3D\x64\d3dcompiler_47.dll')">
+      <Link>d3dcompiler_47.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
     <None Include="TemporaryKey.pfx" />
     <None Include="uwp_TemporaryKey.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libuwp\libuwp.vcxproj">
+      <Project>{ebff738e-cf1c-4f2b-a484-e9f602397208}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\lib\sdl2\VisualC-WinRT\SDL-UWP.vcxproj">
+      <Project>{89e9b32e-a86a-47c3-a948-d2b1622925ce}</Project>
+    </ProjectReference>
   </ItemGroup>
 </Project>

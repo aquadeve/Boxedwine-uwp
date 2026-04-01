@@ -5,23 +5,26 @@
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap mp">
+  IgnorableNamespaces="uap mp rescap">
 
   <Identity
-    Name="boxedwine-uwp"
+    Name="boxedwine-android-uwp"
     Publisher="CN=KantzJr"
-    Version="1.0.0.0" />
+    Version="2.0.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="5a528e66-e0fc-43fb-b377-ce0b1bb0d3e8" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>Boxed Wine UWP</DisplayName>
+    <DisplayName>Boxedwine Android</DisplayName>
     <PublisherDisplayName>danwo</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
   <Dependencies>
+    <!-- Windows Desktop (PC, tablet, Surface) -->
     <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+    <!-- Xbox One and Xbox Series X|S -->
+    <TargetDeviceFamily Name="Windows.Xbox" MinVersion="10.0.18362.0" MaxVersionTested="10.0.22621.0" />
   </Dependencies>
 
   <Resources>
@@ -33,15 +36,25 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="uwp.App">
       <uap:VisualElements
-        DisplayName="Boxed Wine"
+        DisplayName="Boxedwine Android"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png"
-	Description="16/32 bit app support for UWP bia Boxed Wine"
+        Description="Android APK emulator for UWP and Xbox - runs Android native apps via ARMv7 CPU emulation"
         BackgroundColor="transparent">
-	<!--<uap:SplashScreen Image="Assets\SplashScreen.png" /> -->
         <uap:DefaultTile Square71x71Logo="Assets\SmallTile.png" Wide310x150Logo="Assets\WideTile.png" Square310x310Logo="Assets\LargeTile.png"/>
         <uap:SplashScreen Image="Assets\SplashScreen.png"/>
       </uap:VisualElements>
+      <Extensions>
+        <!-- Register as handler for .apk files so users can open APKs directly -->
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="androidapk">
+            <uap:SupportedFileTypes>
+              <uap:FileType>.apk</uap:FileType>
+            </uap:SupportedFileTypes>
+            <uap:DisplayName>Android Application Package</uap:DisplayName>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
 
@@ -54,6 +67,5 @@
     <Capability Name="codeGeneration"/>
     <Capability Name="internetClientServer"/>
     <Capability Name="privateNetworkClientServer"/>
-
   </Capabilities>
 </Package>

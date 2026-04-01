@@ -1,0 +1,36 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\KantzJr\\Documents\\GitHub\\Bridge\\Angle\\winrt\\10\\src\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{7E3E300C-E43E-45E3-7AFE-6C728B705A32}|angle_common.vcxproj|C:\\Users\\KantzJr\\Documents\\GitHub\\Bridge\\Angle\\src\\common\\mathutil.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "mathutil.cpp",
+              "DocumentMoniker": "C:\\Users\\KantzJr\\Documents\\GitHub\\Bridge\\Angle\\src\\common\\mathutil.cpp",
+              "RelativeDocumentMoniker": "..\\..\\..\\src\\common\\mathutil.cpp",
+              "ToolTip": "C:\\Users\\KantzJr\\Documents\\GitHub\\Bridge\\Angle\\src\\common\\mathutil.cpp",
+              "RelativeToolTip": "..\\..\\..\\src\\common\\mathutil.cpp",
+              "ViewState": "AgIAADYAAAAAAAAAAAAmwEMAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-03-30T11:19:36.2Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
