@@ -17,11 +17,31 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/* Debug logging macro — active in debug builds */
-#if defined(_DEBUG) || !defined(NDEBUG)
-#define LNK_LOG_DEBUG(fmt, ...) fprintf(stderr, "[LNK DEBUG] " fmt "\n", ##__VA_ARGS__)
+/* Debug logging macro — on MSVC/UWP uses OutputDebugStringA */
+#if defined(_MSC_VER)
+#  include <windows.h>
+#  include <stdarg.h>
+   static inline void _lnk_output_dbg(const char *fmt, ...) {
+       char buf[1024];
+       va_list ap;
+       va_start(ap, fmt);
+       vsnprintf(buf, sizeof(buf), fmt, ap);
+       va_end(ap);
+       OutputDebugStringA(buf);
+   }
+#  ifdef _DEBUG
+#    define LNK_LOG_DEBUG(fmt, ...) _lnk_output_dbg("[LNK DEBUG] " fmt "\n", ##__VA_ARGS__)
+#  else
+#    define LNK_LOG_DEBUG(fmt, ...) ((void)0)
+#  endif
+#  define LNK_LOG_ERR(fmt, ...)   _lnk_output_dbg("[LNK ERROR] " fmt "\n", ##__VA_ARGS__)
 #else
-#define LNK_LOG_DEBUG(fmt, ...) ((void)0)
+#  if !defined(NDEBUG)
+#    define LNK_LOG_DEBUG(fmt, ...) fprintf(stderr, "[LNK DEBUG] " fmt "\n", ##__VA_ARGS__)
+#  else
+#    define LNK_LOG_DEBUG(fmt, ...) ((void)0)
+#  endif
+#  define LNK_LOG_ERR(fmt, ...)   fprintf(stderr, "[LNK ERROR] " fmt "\n", ##__VA_ARGS__)
 #endif
 
 /* -------------------------------------------------------------------------
@@ -105,7 +125,7 @@ int android_linker_load(LinkerContext *ctx, const char *name,
     /* Validate ELF magic */
     if (elf_data[0] != 0x7F || elf_data[1] != 'E' ||
         elf_data[2] != 'L'  || elf_data[3] != 'F') {
-        fprintf(stderr, "android_linker: %s: bad ELF magic\n", name);
+        LNK_LOG_ERR("%s: bad ELF magic", name);
         LNK_LOG_DEBUG("load: FAILED — bad ELF magic (0x%02X%02X%02X%02X)",
                       elf_data[0], elf_data[1], elf_data[2], elf_data[3]);
         return -1;
@@ -119,14 +139,14 @@ int android_linker_load(LinkerContext *ctx, const char *name,
         if (elf_size < sizeof(Elf64_Ehdr)) return -1;
         const Elf64_Ehdr *ehdr = elf64_hdr(elf_data);
         if (ehdr->e_machine != EM_AARCH64) {
-            fprintf(stderr, "android_linker: %s: not an AArch64 ELF64 (e_machine=%u)\n", name, ehdr->e_machine);
+            LNK_LOG_ERR("%s: not an AArch64 ELF64 (e_machine=%u)", name, ehdr->e_machine);
             return -1;
         }
     } else {
         if (elf_size < sizeof(Elf32_Ehdr)) return -1;
         const Elf32_Ehdr *ehdr = elf_hdr(elf_data);
         if (ehdr->e_machine != EM_ARM) {
-            fprintf(stderr, "android_linker: %s: not an ARM ELF32 (e_machine=%u)\n", name, ehdr->e_machine);
+            LNK_LOG_ERR("%s: not an ARM ELF32 (e_machine=%u)", name, ehdr->e_machine);
             return -1;
         }
     }
@@ -159,7 +179,7 @@ int android_linker_load(LinkerContext *ctx, const char *name,
     /* Allocate virtual address range */
     uint32_t load_base = ctx->next_load_base;
     if (load_base + total_size > ctx->mem_size) {
-        fprintf(stderr, "android_linker: out of emulated memory for %s\n", name);
+        LNK_LOG_ERR("out of emulated memory for %s", name);
         return -1;
     }
     ctx->next_load_base = align_up(load_base + total_size, 4096);
@@ -176,7 +196,7 @@ int android_linker_load(LinkerContext *ctx, const char *name,
             if (ph->p_type != PT_LOAD) continue;
             uint32_t dest_off = (uint32_t)ph->p_vaddr - min_va;
             if (ph->p_offset + ph->p_filesz > elf_size) {
-                fprintf(stderr, "android_linker: %s: segment out of bounds\n", name);
+                LNK_LOG_ERR("%s: segment out of bounds", name);
                 return -1;
             }
             memcpy(seg_mem + dest_off, elf_data + ph->p_offset, (size_t)ph->p_filesz);
@@ -188,7 +208,7 @@ int android_linker_load(LinkerContext *ctx, const char *name,
             if (ph->p_type != PT_LOAD) continue;
             uint32_t dest_off = ph->p_vaddr - min_va;
             if (ph->p_offset + ph->p_filesz > elf_size) {
-                fprintf(stderr, "android_linker: %s: segment out of bounds\n", name);
+                LNK_LOG_ERR("%s: segment out of bounds", name);
                 return -1;
             }
             memcpy(seg_mem + dest_off, elf_data + ph->p_offset, ph->p_filesz);
@@ -386,7 +406,7 @@ static bool apply_relocations(LinkerContext *ctx, LoadedLib *lib,
             } else {
                 sym_va = android_linker_lookup(ctx, sym_name);
                 if (!sym_va && type != R_ARM_RELATIVE) {
-                    fprintf(stderr, "android_linker: unresolved symbol '%s'\n", sym_name);
+                    LNK_LOG_ERR("unresolved symbol '%s'", sym_name);
                 }
             }
         }
@@ -415,7 +435,7 @@ static bool apply_relocations(LinkerContext *ctx, LoadedLib *lib,
             case R_ARM_NONE:
                 break;
             default:
-                fprintf(stderr, "android_linker: unhandled reloc type %u\n", type);
+                LNK_LOG_ERR("unhandled reloc type %u", type);
                 break;
         }
 
@@ -453,7 +473,7 @@ static bool apply_relocations64(LinkerContext *ctx, LoadedLib *lib,
             } else {
                 sym_va = android_linker_lookup(ctx, sym_name);
                 if (!sym_va && type != R_AARCH64_RELATIVE) {
-                    fprintf(stderr, "android_linker: unresolved symbol '%s'\n", sym_name);
+                    LNK_LOG_ERR("unresolved symbol '%s'", sym_name);
                 }
             }
         }
@@ -489,7 +509,7 @@ static bool apply_relocations64(LinkerContext *ctx, LoadedLib *lib,
             case R_AARCH64_NONE:
                 break;
             default:
-                fprintf(stderr, "android_linker: unhandled AArch64 reloc type %u\n", type);
+                LNK_LOG_ERR("unhandled AArch64 reloc type %u", type);
                 break;
         }
     }

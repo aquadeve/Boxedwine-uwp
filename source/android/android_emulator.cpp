@@ -39,13 +39,39 @@
 #include <string.h>
 
 /* -------------------------------------------------------------------------
- * Debug logging macro: active in debug builds (_DEBUG defined by MSVC,
- * or NDEBUG *not* defined on GCC/Clang).
+ * Debug / error logging macros.
+ *
+ * On MSVC (UWP), fprintf(stderr) is invisible — the Visual Studio Output
+ * window only captures OutputDebugStringA.  We route both debug-only and
+ * always-on error messages through that API when building with MSVC in a
+ * debug configuration.
  * ---------------------------------------------------------------------- */
-#if defined(_DEBUG) || !defined(NDEBUG)
-#define EMU_LOG_DEBUG(fmt, ...) fprintf(stderr, "[EMU DEBUG] " fmt "\n", ##__VA_ARGS__)
+#if defined(_MSC_VER)
+#  include <windows.h>                 /* OutputDebugStringA              */
+#  include <stdarg.h>
+   static inline void _emu_output_dbg(const char *fmt, ...) {
+       char buf[1024];
+       va_list ap;
+       va_start(ap, fmt);
+       vsnprintf(buf, sizeof(buf), fmt, ap);
+       va_end(ap);
+       OutputDebugStringA(buf);
+   }
+#  ifdef _DEBUG
+#    define EMU_LOG_DEBUG(fmt, ...) _emu_output_dbg("[EMU DEBUG] " fmt "\n", ##__VA_ARGS__)
+#  else
+#    define EMU_LOG_DEBUG(fmt, ...) ((void)0)
+#  endif
+#  define EMU_LOG_ERR(fmt, ...)   _emu_output_dbg("[EMU ERROR] " fmt "\n", ##__VA_ARGS__)
+#  define EMU_LOG_INFO(fmt, ...)  _emu_output_dbg("[EMU INFO]  " fmt "\n", ##__VA_ARGS__)
 #else
-#define EMU_LOG_DEBUG(fmt, ...) ((void)0)
+#  if !defined(NDEBUG)
+#    define EMU_LOG_DEBUG(fmt, ...) fprintf(stderr, "[EMU DEBUG] " fmt "\n", ##__VA_ARGS__)
+#  else
+#    define EMU_LOG_DEBUG(fmt, ...) ((void)0)
+#  endif
+#  define EMU_LOG_ERR(fmt, ...)   fprintf(stderr, "[EMU ERROR] " fmt "\n", ##__VA_ARGS__)
+#  define EMU_LOG_INFO(fmt, ...)  fprintf(stdout, "[EMU INFO]  " fmt "\n", ##__VA_ARGS__)
 #endif
 
 /* -------------------------------------------------------------------------
@@ -486,8 +512,7 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     emu->mem_size = ANDROID_MEM_SIZE;
     emu->mem = (uint8_t*)calloc(1, emu->mem_size);
     if (!emu->mem) {
-        fprintf(stderr, "android_emulator: failed to allocate %u MB of emulated memory\n",
-                ANDROID_MEM_SIZE / (1024*1024));
+        EMU_LOG_ERR("failed to allocate %u MB of emulated memory", ANDROID_MEM_SIZE / (1024*1024));
         EMU_LOG_DEBUG("init: FAILED — memory allocation (%u MB)", ANDROID_MEM_SIZE / (1024*1024));
         return false;
     }
@@ -503,8 +528,7 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     /* Load the APK — must happen BEFORE ABI detection and stub installation */
     EMU_LOG_DEBUG("init: opening APK '%s'", config->apk_path ? config->apk_path : "(null)");
     if (!apk_open(config->apk_path, &emu->apk)) {
-        fprintf(stderr, "android_emulator: failed to open APK: %s\n",
-                config->apk_path ? config->apk_path : "(null)");
+        EMU_LOG_ERR("failed to open APK: %s", config->apk_path ? config->apk_path : "(null)");
         EMU_LOG_DEBUG("init: FAILED — apk_open returned false");
         return false;
     }
@@ -512,7 +536,7 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
                   emu->apk.target_abi, emu->apk.lib_count, emu->apk.package_name);
 
     if (config->verbosity >= 1)
-        fprintf(stdout, "android_emulator: loaded APK '%s' (%s), %u native lib(s)\n",
+        EMU_LOG_INFO("loaded APK '%s' (%s), %u native lib(s)",
                 config->apk_path, emu->apk.target_abi, emu->apk.lib_count);
 
     /* Detect ABI: arm64-v8a -> AArch64, everything else -> ARMv7 */
@@ -541,13 +565,12 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
         EMU_LOG_DEBUG("init: loading lib[%u] '%s' (%zu bytes)", i, lib->name, lib->size);
         int idx = android_linker_load(&emu->linker, lib->name, lib->data, lib->size);
         if (idx < 0) {
-            fprintf(stderr, "android_emulator: failed to load %s\n", lib->name);
+            EMU_LOG_ERR("failed to load %s", lib->name);
             EMU_LOG_DEBUG("init: FAILED to load '%s'", lib->name);
         } else {
             loaded_count++;
             if (config->verbosity >= 2) {
-                fprintf(stdout, "android_emulator: loaded %s at VA 0x%08X\n",
-                        lib->name, emu->linker.libs[idx].load_base);
+                EMU_LOG_INFO("loaded %s at VA 0x%08X", lib->name, emu->linker.libs[idx].load_base);
             }
             EMU_LOG_DEBUG("init: loaded '%s' at VA 0x%08X (idx=%d)",
                           lib->name, emu->linker.libs[idx].load_base, idx);
@@ -556,7 +579,7 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     EMU_LOG_DEBUG("init: loaded %u/%u native libraries", loaded_count, emu->apk.lib_count);
 
     if (loaded_count == 0 && emu->apk.lib_count > 0) {
-        fprintf(stderr, "android_emulator: all %u native libraries failed to load\n", emu->apk.lib_count);
+        EMU_LOG_ERR("all %u native libraries failed to load", emu->apk.lib_count);
         EMU_LOG_DEBUG("init: FAILED — zero libraries loaded");
         return false;
     }
@@ -564,7 +587,7 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     /* Resolve relocations */
     EMU_LOG_DEBUG("init: starting relocations for %u libraries", emu->linker.lib_count);
     if (!android_linker_relocate_all(&emu->linker)) {
-        fprintf(stderr, "android_emulator: relocation failed\n");
+        EMU_LOG_ERR("relocation failed");
         EMU_LOG_DEBUG("init: FAILED at relocation");
         return false;
     }
@@ -628,13 +651,13 @@ bool android_emulator_init(AndroidEmulator *emu, const AndroidEmulatorConfig *co
     }
 
     if (!entry) {
-        fprintf(stderr, "android_emulator: no entry point found\n");
+        EMU_LOG_ERR("no entry point found");
         EMU_LOG_DEBUG("init: FAILED — no entry point found in any library");
         return false;
     }
 
     if (config->verbosity >= 1)
-        fprintf(stdout, "android_emulator: entry point at VA 0x%08X (%s mode)\n",
+        EMU_LOG_INFO("entry point at VA 0x%08X (%s mode)",
                 entry, emu->is_arm64 ? "AArch64" : "ARMv7");
 
     /* Set up fake argc/argv on stack */

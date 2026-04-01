@@ -19,11 +19,29 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/* Debug logging macro — active in debug builds */
-#if defined(_DEBUG) || !defined(NDEBUG)
-#define APK_LOG_DEBUG(fmt, ...) fprintf(stderr, "[APK DEBUG] " fmt "\n", ##__VA_ARGS__)
+/* Debug logging macro — on MSVC/UWP uses OutputDebugStringA */
+#if defined(_MSC_VER)
+#  include <windows.h>
+#  include <stdarg.h>
+   static inline void _apk_output_dbg(const char *fmt, ...) {
+       char buf[1024];
+       va_list ap;
+       va_start(ap, fmt);
+       vsnprintf(buf, sizeof(buf), fmt, ap);
+       va_end(ap);
+       OutputDebugStringA(buf);
+   }
+#  ifdef _DEBUG
+#    define APK_LOG_DEBUG(fmt, ...) _apk_output_dbg("[APK DEBUG] " fmt "\n", ##__VA_ARGS__)
+#  else
+#    define APK_LOG_DEBUG(fmt, ...) ((void)0)
+#  endif
 #else
-#define APK_LOG_DEBUG(fmt, ...) ((void)0)
+#  if !defined(NDEBUG)
+#    define APK_LOG_DEBUG(fmt, ...) fprintf(stderr, "[APK DEBUG] " fmt "\n", ##__VA_ARGS__)
+#  else
+#    define APK_LOG_DEBUG(fmt, ...) ((void)0)
+#  endif
 #endif
 
 /* Minizip is in lib/zlib/contrib/minizip/ */
