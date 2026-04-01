@@ -270,10 +270,25 @@ extern "C" int SDL_main(int argc, char* argv[])
         SDL_Log("Android emulator initialised successfully");
     }
 
+#if defined(_DEBUG)
+    SDL_Log("[EMU DEBUG] main: gles1 context = %p", (void*)emu->gles1);
+    SDL_Log("[EMU DEBUG] main: cpu.running = %d, is_arm64 = %d", emu->cpu.running, emu->is_arm64);
+    if (!emu->is_arm64) {
+        SDL_Log("[EMU DEBUG] main: cpu.r[15](pc) = 0x%08X, cpu.r[13](sp) = 0x%08X", emu->cpu.r[15], emu->cpu.r[13]);
+    }
+    SDL_Log("[EMU DEBUG] main: entering main loop (CPU_STEPS_PER_FRAME=%u)", 1000000u);
+#endif
+
     bool quit = false;
     const unsigned CPU_STEPS_PER_FRAME = 1000000;
     const float CURSOR_SPEED = 10.0f;
     const int16_t STICK_DEADZONE = 8000;
+
+#if defined(_DEBUG)
+    unsigned total_frames = 0;
+    unsigned total_steps = 0;
+    unsigned frames_with_render = 0;
+#endif
 
     while (!quit && emu->cpu.running) {
         SDL_Event event;
@@ -381,6 +396,24 @@ extern "C" int SDL_main(int argc, char* argv[])
             android_emulator_step(emu, CPU_STEPS_PER_FRAME);
         }
 
+#if defined(_DEBUG)
+        total_frames++;
+        /* Log periodically (every 60 frames ~ 1 second at 60fps) */
+        if (total_frames <= 5 || (total_frames % 60) == 0) {
+            SDL_Log("[EMU DEBUG] frame %u: cpu.running=%d frame_ready=%d pc=0x%08X sp=0x%08X",
+                    total_frames, emu->cpu.running, emu->frame_ready,
+                    emu->is_arm64 ? 0 : emu->cpu.r[15],
+                    emu->is_arm64 ? 0 : emu->cpu.r[13]);
+        }
+        if (emu->frame_ready) {
+            frames_with_render++;
+            if (frames_with_render <= 3) {
+                SDL_Log("[EMU DEBUG] main: frame_ready=true (rendered frame #%u at loop frame %u)",
+                        frames_with_render, total_frames);
+            }
+        }
+#endif
+
         /* If the guest called eglSwapBuffers (frame_ready), present the frame.
          * Otherwise keep stepping — the guest is still setting up. */
         if (emu->frame_ready) {
@@ -402,6 +435,15 @@ extern "C" int SDL_main(int argc, char* argv[])
     if (config.verbosity >= 1) {
         SDL_Log("Android emulator exited with code %d", emu->exit_code);
     }
+
+#if defined(_DEBUG)
+    SDL_Log("[EMU DEBUG] main: total frames=%u, rendered frames=%u, cpu.running=%d",
+            total_frames, frames_with_render, emu->cpu.running);
+    if (!emu->is_arm64) {
+        SDL_Log("[EMU DEBUG] main: final pc=0x%08X sp=0x%08X",
+                emu->cpu.r[15], emu->cpu.r[13]);
+    }
+#endif
 
     int exit_code = emu->exit_code;
 

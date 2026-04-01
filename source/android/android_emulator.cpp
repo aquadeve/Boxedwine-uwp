@@ -750,6 +750,27 @@ static void install_stub_a64(uint8_t *mem, uint32_t va, uint32_t stub_id) {
  * ---------------------------------------------------------------------- */
 static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
     ArmV7State *cpu = &emu->cpu;
+
+#ifdef _DEBUG
+    /* Track and log first invocation of each stub for debugging */
+    static bool stub_seen[STUB_COUNT] = {};
+    static unsigned stub_call_count = 0;
+    stub_call_count++;
+    if (stub_id < STUB_COUNT && !stub_seen[stub_id]) {
+        stub_seen[stub_id] = true;
+        EMU_LOG_DEBUG("stub[%u]: first call to %s (call #%u, pc=0x%08X)",
+                      stub_id,
+                      stub_id < STUB_COUNT ? stub_names[stub_id] : "???",
+                      stub_call_count,
+                      cpu->r[15]);
+    }
+    /* Log every 100000th call so we can see the emulator is alive */
+    if ((stub_call_count % 100000) == 0) {
+        EMU_LOG_DEBUG("stub dispatch: %u total calls, pc=0x%08X sp=0x%08X",
+                      stub_call_count, cpu->r[15], cpu->r[13]);
+    }
+#endif
+
     /* Helper macros for reading emulated memory strings/pointers */
 #define EMU_STR(va) ((va) < emu->mem_size ? (char*)(emu->mem + (va)) : (char*)"")
 #define EMU_PTR(va) ((va) < emu->mem_size ? (emu->mem + (va)) : (uint8_t*)NULL)
@@ -1437,8 +1458,10 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
          *  EGL (stub implementations — guest uses our host GL context)
          * ================================================================== */
         case STUB_EGLGETDISPLAY:
+            EMU_LOG_DEBUG("eglGetDisplay called");
             cpu->r[0] = 0xC00FA15Eu; break; /* fake display handle */
         case STUB_EGLINITIALIZE:
+            EMU_LOG_DEBUG("eglInitialize called");
             cpu->r[0] = 1; break; /* EGL_TRUE */
         case STUB_EGLCHOOSECONFIG:
             /* Write num_config = 1 */
@@ -1449,16 +1472,20 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
         case STUB_EGLGETCONFIGATTRIB:
             cpu->r[0] = 1; break;
         case STUB_EGLCREATEWINDOWSURFACE:
+            EMU_LOG_DEBUG("eglCreateWindowSurface called");
             cpu->r[0] = 0xCAFEBABEu; break; /* fake surface */
         case STUB_EGLCREATECONTEXT:
+            EMU_LOG_DEBUG("eglCreateContext called");
             cpu->r[0] = 0xF00DFACEu; break; /* fake context */
         case STUB_EGLMAKECURRENT:
+            EMU_LOG_DEBUG("eglMakeCurrent called");
             cpu->r[0] = 1; break;
         case STUB_EGLQUERYSURFACE:
             cpu->r[0] = 1; break;
         case STUB_EGLSWAPBUFFERS:
             /* Signal the host main loop that a frame is ready */
             emu->frame_ready = true;
+            EMU_LOG_DEBUG("eglSwapBuffers called — frame_ready=true");
             cpu->r[0] = 1; break;
         case STUB_EGLSWAPINTERVAL:
             cpu->r[0] = 1; break;
@@ -1551,7 +1578,7 @@ static void bionic_stub_dispatch(AndroidEmulator *emu, uint32_t stub_id) {
          *  Default
          * ================================================================== */
         default:
-            fprintf(stderr, "android_emulator: unknown bionic stub %u (%s)\n",
+            EMU_LOG_ERR("unknown bionic stub %u (%s)",
                     stub_id, (stub_id < STUB_COUNT && stub_names[stub_id]) ? stub_names[stub_id] : "?");
             cpu->r[0] = 0; break;
     }
@@ -1566,6 +1593,14 @@ static void combined_swi_handler(void *ctx, uint32_t swi_num) {
     if (swi_num > 0 && swi_num < STUB_COUNT) {
         bionic_stub_dispatch(emu, swi_num);
     } else {
+#ifdef _DEBUG
+        static unsigned syscall_count = 0;
+        syscall_count++;
+        if (syscall_count <= 10) {
+            EMU_LOG_DEBUG("syscall dispatch: swi=%u (call #%u, pc=0x%08X)",
+                          swi_num, syscall_count, emu->cpu.r[15]);
+        }
+#endif
         android_syscall_dispatch(&emu->cpu, &emu->syscall_state, swi_num);
     }
 }
@@ -1905,10 +1940,23 @@ bool android_emulator_step(AndroidEmulator *emu, unsigned max_instructions) {
         }
         return emu->cpu64.running;
     } else {
-        if (!emu->cpu.running) return false;
-        for (unsigned i = 0; i < max_instructions && emu->cpu.running && !emu->frame_ready; i++) {
+        if (!emu->cpu.running) {
+            EMU_LOG_DEBUG("step: cpu not running (pc=0x%08X)", emu->cpu.r[15]);
+            return false;
+        }
+        unsigned i;
+        for (i = 0; i < max_instructions && emu->cpu.running && !emu->frame_ready; i++) {
             armv7_step(&emu->cpu);
         }
+#ifdef _DEBUG
+        static unsigned step_call_count = 0;
+        step_call_count++;
+        if (step_call_count <= 3) {
+            EMU_LOG_DEBUG("step[%u]: executed %u/%u instructions, running=%d frame_ready=%d pc=0x%08X",
+                          step_call_count, i, max_instructions,
+                          emu->cpu.running, emu->frame_ready, emu->cpu.r[15]);
+        }
+#endif
         return emu->cpu.running;
     }
 }

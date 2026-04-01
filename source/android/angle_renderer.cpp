@@ -20,14 +20,20 @@
  *
  * On UWP the headers come from the ANGLE distribution bundled with the
  * project.  On other platforms they come from the system SDK.
+ *
+ * GL_GLEXT_PROTOTYPES must be defined before <GLES2/gl2.h> so that
+ * function prototypes (not just typedefs) are emitted by the header.
  * ---------------------------------------------------------------------- */
-#ifdef _MSC_VER
+#ifndef GL_GLEXT_PROTOTYPES
 #  define GL_GLEXT_PROTOTYPES
+#endif
+
+#ifdef _MSC_VER
+#  include <windows.h>               /* OutputDebugStringA (for debug logging) */
 #  include <GLES2/gl2.h>
 #  include <GLES2/gl2ext.h>
 #else
 /* Linux / Android / other: use system GLES2 headers */
-#  define GL_GLEXT_PROTOTYPES
 #  ifdef __ANDROID__
 #    include <GLES2/gl2.h>
 #    include <GLES2/gl2ext.h>

@@ -248,7 +248,7 @@
 		$(ProjectDir)..\..\..\..\lib\zlib\contrib\minizip;
 		$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>_DEBUG;BOXEDWINE_UWP_EGL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;BOXEDWINE_UWP_EGL;GL_GLEXT_PROTOTYPES;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAsWinRT>false</CompileAsWinRT>
@@ -287,11 +287,7 @@
 		      $(ProjectDir)..\..\..\..\lib\zlib\contrib\minizip;
 		      $(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>NDEBUG;BOXEDWINE_UWP_EGL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <CompileAsWinRT>false</CompileAsWinRT>
-      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <PreprocessorDefinitions>NDEBUG;BOXEDWINE_UWP_EGL;GL_GLEXT_PROTOTYPES;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>

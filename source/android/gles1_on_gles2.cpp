@@ -20,15 +20,22 @@
 #include <stdio.h>
 
 /* -----------------------------------------------------------------------
- * Portable OpenGL ES 2.0 includes (must define GL_GLEXT_PROTOTYPES first)
+ * Portable OpenGL ES 2.0 includes
+ *
+ * GL_GLEXT_PROTOTYPES must be defined before <GLES2/gl2.h> so that
+ * function prototypes (not just typedefs) are emitted by the header.
+ * On UWP this is also set project-wide via the vcxproj preprocessor
+ * definitions, but we define it here too for standalone compilation.
  * ----------------------------------------------------------------------- */
+#ifndef GL_GLEXT_PROTOTYPES
+#  define GL_GLEXT_PROTOTYPES
+#endif
+
 #ifdef _MSC_VER
 #  include <windows.h>               /* OutputDebugStringA */
-#  define GL_GLEXT_PROTOTYPES
 #  include <GLES2/gl2.h>
 #  include <GLES2/gl2ext.h>
 #else
-#  define GL_GLEXT_PROTOTYPES
 #  include <GLES2/gl2.h>
 #endif
 
@@ -300,10 +307,19 @@ GLES1Context *gles1_create(uint8_t *mem_base, uint32_t mem_size) {
     ctx->mem = mem_base;
     ctx->mem_size = mem_size;
 
+#ifdef _MSC_VER
+    OutputDebugStringA("[GLES1] gles1_create: compiling uber-shader...\n");
+#endif
+
     /* Compile shader */
     GLuint vs = compile_shader(GL_VERTEX_SHADER, vert_src);
     GLuint fs = compile_shader(GL_FRAGMENT_SHADER, frag_src);
-    if (!vs || !fs) { free(ctx); return NULL; }
+    if (!vs || !fs) {
+#ifdef _MSC_VER
+        OutputDebugStringA("[GLES1] gles1_create: shader compilation FAILED\n");
+#endif
+        free(ctx); return NULL;
+    }
 
     ctx->program = glCreateProgram();
     glAttachShader(ctx->program, vs);
@@ -328,6 +344,10 @@ GLES1Context *gles1_create(uint8_t *mem_base, uint32_t mem_size) {
         free(ctx);
         return NULL;
     }
+
+#ifdef _MSC_VER
+    OutputDebugStringA("[GLES1] gles1_create: shader compiled and linked OK\n");
+#endif
 
     ctx->a_position = glGetAttribLocation(ctx->program, "a_position");
     ctx->a_texcoord = glGetAttribLocation(ctx->program, "a_texcoord");
@@ -872,6 +892,16 @@ static void prepare_draw(GLES1Context *ctx) {
 }
 
 void gles1_drawArrays(GLES1Context *ctx, uint32_t mode, int first, int count) {
+#if defined(_MSC_VER) && defined(_DEBUG)
+    static unsigned draw_call_count = 0;
+    draw_call_count++;
+    if (draw_call_count <= 5) {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "[GLES1] drawArrays #%u: mode=0x%X first=%d count=%d\n",
+                 draw_call_count, mode, first, count);
+        OutputDebugStringA(buf);
+    }
+#endif
     prepare_draw(ctx);
     glDrawArrays(mode, first, count);
 }
