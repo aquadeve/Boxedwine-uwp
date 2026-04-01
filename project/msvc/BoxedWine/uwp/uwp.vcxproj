@@ -230,7 +230,7 @@
 	      		    onecore.lib;
 	      		    WindowsApp.lib;
 			    d3d11.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(SolutionDir)\deps\lib;$(VCInstallDir)\lib\store\amd64;$(VCInstallDir)\lib\amd64;$(ProjectDir)Angle\winrt\10\src\Debug_x64\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(SolutionDir)x64\Debug\SDL2-UWP;$(SolutionDir)\deps\lib;$(VCInstallDir)\lib\store\amd64;$(VCInstallDir)\lib\amd64;$(ProjectDir)Angle\winrt\10\src\Debug_x64\lib</AdditionalLibraryDirectories>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
@@ -271,7 +271,7 @@
 	      		    onecore.lib;
 	      		    WindowsApp.lib;
 			    d3d11.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(SolutionDir)\deps\lib; $(VCInstallDir)\lib\store\amd64; $(VCInstallDir)\lib\amd64; $(ProjectDir)Angle\winrt\10\src\Release_x64\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(SolutionDir)x64\Release\SDL2-UWP;$(SolutionDir)\deps\lib; $(VCInstallDir)\lib\store\amd64; $(VCInstallDir)\lib\amd64; $(ProjectDir)Angle\winrt\10\src\Release_x64\lib</AdditionalLibraryDirectories>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
     </Link>
     <ClCompile>
@@ -369,9 +369,9 @@
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\MeshContentTask.targets" />
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ShaderGraphContentTask.targets" />
   </ImportGroup>
-  <!-- SDL and zlib deps -->
+  <!-- SDL2 UWP build (from SDL-UWP project) and zlib deps -->
   <ItemGroup>
-    <Content Include="$(SolutionDir)/deps/bin/SDL2.dll">
+    <Content Include="$(SolutionDir)$(Platform)\$(Configuration)\SDL2-UWP\SDL2.dll">
       <Link>SDL2.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -418,6 +418,9 @@
   <ItemGroup>
     <ProjectReference Include="..\libuwp\libuwp.vcxproj">
       <Project>{ebff738e-cf1c-4f2b-a484-e9f602397208}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\lib\sdl2\VisualC-WinRT\SDL-UWP.vcxproj">
+      <Project>{89e9b32e-a86a-47c3-a948-d2b1622925ce}</Project>
     </ProjectReference>
   </ItemGroup>
 </Project>
