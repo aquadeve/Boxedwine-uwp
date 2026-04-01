@@ -223,7 +223,7 @@
 	      		    libGLESv2.lib;
 	      		    z.lib;
 	      		    SDL2.lib;
-	      		    $(SolutionDir)x64\Release\libuwp\libuwp.lib;
+	      		    $(SolutionDir)x64\Debug\libuwp\libuwp.lib;
 	      		    $(SolutionDir)x64\Debug\BoxedWine.lib;
 	      		    gdi32.lib;
 	      		    ntdll.lib;
