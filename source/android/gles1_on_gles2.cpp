@@ -19,10 +19,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/* -----------------------------------------------------------------------
+ * Portable OpenGL ES 2.0 includes (must define GL_GLEXT_PROTOTYPES first)
+ * ----------------------------------------------------------------------- */
 #ifdef _MSC_VER
-#include <GLES2/gl2.h>
+#  include <windows.h>               /* OutputDebugStringA */
+#  define GL_GLEXT_PROTOTYPES
+#  include <GLES2/gl2.h>
+#  include <GLES2/gl2ext.h>
 #else
-#include <GLES2/gl2.h>
+#  define GL_GLEXT_PROTOTYPES
+#  include <GLES2/gl2.h>
 #endif
 
 /* -----------------------------------------------------------------------
