@@ -120,7 +120,23 @@ void uwp_PickAFile(char* buffer)
                 if (status == AsyncStatus::Completed) {
                     auto file = op.GetResults();
                     if (file) {
-                        selected = std::wstring(file.Path().c_str());
+                        // Copy the picked file into the app's LocalFolder so that
+                        // standard C fopen() can access it (UWP sandbox restriction:
+                        // fopen works only for paths inside the app data folders).
+                        auto localFolder = ApplicationData::Current().LocalFolder();
+                        file.CopyAsync(localFolder, file.Name(),
+                                       NameCollisionOption::ReplaceExisting)
+                            .Completed(
+                                [&selected, hDone](auto copyOp, auto copyStatus) {
+                                    if (copyStatus == AsyncStatus::Completed) {
+                                        auto localFile = copyOp.GetResults();
+                                        if (localFile) {
+                                            selected = std::wstring(localFile.Path().c_str());
+                                        }
+                                    }
+                                    if (hDone) SetEvent(hDone);
+                                });
+                        return; // Don't signal hDone yet; wait for copy to complete
                     }
                 }
                 if (hDone) SetEvent(hDone);
@@ -157,6 +173,60 @@ void uwp_PickAFolder(char* buffer)
 
     std::string pathStr(selected.begin(), selected.end());
     sprintf_s(buffer, 256, "%s", pathStr.c_str());
+}
+
+// Copy a file from an arbitrary path into the app's LocalFolder and return the
+// new path.  This is needed because on UWP the standard C fopen() can only
+// open files inside the application's data folders.  Requires the
+// broadFileSystemAccess capability (declared in Package.appxmanifest) to access
+// paths outside the sandbox.  Returns true on success.
+bool uwp_CopyFileToLocal(const char* source_path, char* dest_buffer)
+{
+    if (!source_path || !dest_buffer) return false;
+
+    // Check whether the source is already inside LocalFolder.
+    char localDir[256] = {};
+    uwp_GetLocalDirectory(localDir);
+    if (strncmp(source_path, localDir, strlen(localDir)) == 0) {
+        sprintf_s(dest_buffer, 256, "%s", source_path);
+        return true; // Already in LocalFolder; nothing to copy.
+    }
+
+    std::wstring widePath(source_path, source_path + strlen(source_path));
+    std::wstring resultPath;
+    bool ok = false;
+
+    runOnUIThread([&widePath, &resultPath, &ok](HANDLE hDone) {
+        StorageFile::GetFileFromPathAsync(winrt::hstring(widePath))
+            .Completed([&resultPath, &ok, hDone](auto getOp, auto getStatus) {
+                if (getStatus == AsyncStatus::Completed) {
+                    auto file = getOp.GetResults();
+                    if (file) {
+                        auto localFolder = ApplicationData::Current().LocalFolder();
+                        file.CopyAsync(localFolder, file.Name(),
+                                       NameCollisionOption::ReplaceExisting)
+                            .Completed([&resultPath, &ok, hDone](auto copyOp, auto copyStatus) {
+                                if (copyStatus == AsyncStatus::Completed) {
+                                    auto localFile = copyOp.GetResults();
+                                    if (localFile) {
+                                        resultPath = std::wstring(localFile.Path().c_str());
+                                        ok = true;
+                                    }
+                                }
+                                if (hDone) SetEvent(hDone);
+                            });
+                        return; // Wait for copy
+                    }
+                }
+                if (hDone) SetEvent(hDone);
+            });
+    });
+
+    if (ok) {
+        std::string pathStr(resultPath.begin(), resultPath.end());
+        sprintf_s(dest_buffer, 256, "%s", pathStr.c_str());
+    }
+    return ok;
 }
 
 

@@ -29,6 +29,7 @@
 // to the correct thread from the SDL game thread.
 extern "C" __declspec(dllimport) void uwp_CaptureUIDispatcher();
 extern "C" __declspec(dllimport) void uwp_PickAFile(char* buffer);
+extern "C" __declspec(dllimport) bool uwp_CopyFileToLocal(const char* source_path, char* dest_buffer);
 
 // -------------------------------------------------------------------------
 // SDL hints must be set before SDL_Init()
@@ -138,6 +139,19 @@ extern "C" int SDL_main(int argc, char* argv[])
         if (picked_path[0] != '\0' && std::strstr(picked_path, ".apk")) {
             config.apk_path = picked_path;
         }
+    }
+
+    // For APK paths that came from file activation (argv) rather than the
+    // file picker, copy the file into LocalFolder so that fopen() works
+    // under the UWP sandbox.  uwp_PickAFile already does this internally.
+    static char local_apk_path[256] = {};
+    if (config.apk_path && config.apk_path != picked_path) {
+        if (uwp_CopyFileToLocal(config.apk_path, local_apk_path)) {
+            config.apk_path = local_apk_path;
+        }
+        // If the copy fails (e.g. broadFileSystemAccess not granted),
+        // keep the original path — fopen may still work if the path
+        // is already inside the sandbox.
     }
 
     if (!config.apk_path) {

@@ -22,6 +22,7 @@
 
 /* Windows includes */
 #include "ppltasks.h"
+#include <string>
 using namespace concurrency;
 using namespace Windows::ApplicationModel;
 using namespace Windows::ApplicationModel::Core;
@@ -79,6 +80,11 @@ extern "C" void D3D11_Trim(SDL_Renderer *);
 // SDL_InitSubSystem(SDL_INIT_VIDEO), or something inside
 // SDL_CreateWindow().
 SDL_WinRTApp ^ SDL_WinRTGlobalApp = nullptr;
+
+// Path to a file that was activated via the .apk file-type association.
+// Set in OnAppActivated() (before Run()), consumed in Run() as argv[1].
+static char WINRT_ActivatedFilePath[512] = {};
+static HANDLE WINRT_ActivatedFileCopyDone = NULL;
 
 ref class SDLApplicationSource sealed : Windows::ApplicationModel::Core::IFrameworkViewSource
 {
@@ -338,18 +344,39 @@ void SDL_WinRTApp::Run()
 {
     SDL_SetMainReady();
     if (WINRT_SDLAppEntryPoint) {
-        // TODO, WinRT: pass the C-style main() a reasonably realistic
-        // representation of command line arguments.
-        int argc = 1;
-        char **argv = (char **)SDL_malloc(2 * sizeof(*argv));
-        if (!argv) {
-            return;
+        // If a file activation copy is in progress, wait for it to finish.
+        if (WINRT_ActivatedFileCopyDone) {
+            WaitForSingleObjectEx(WINRT_ActivatedFileCopyDone, 10000, FALSE);
+            CloseHandle(WINRT_ActivatedFileCopyDone);
+            WINRT_ActivatedFileCopyDone = NULL;
         }
-        argv[0] = SDL_strdup("WinRTApp");
-        argv[1] = NULL;
-        WINRT_SDLAppEntryPoint(argc, argv);
-        SDL_free(argv[0]);
-        SDL_free(argv);
+
+        // If we have an activated file path, pass it as argv[1].
+        if (WINRT_ActivatedFilePath[0]) {
+            int argc = 2;
+            char **argv = (char **)SDL_malloc(3 * sizeof(*argv));
+            if (!argv) {
+                return;
+            }
+            argv[0] = SDL_strdup("WinRTApp");
+            argv[1] = SDL_strdup(WINRT_ActivatedFilePath);
+            argv[2] = NULL;
+            WINRT_SDLAppEntryPoint(argc, argv);
+            SDL_free(argv[0]);
+            SDL_free(argv[1]);
+            SDL_free(argv);
+        } else {
+            int argc = 1;
+            char **argv = (char **)SDL_malloc(2 * sizeof(*argv));
+            if (!argv) {
+                return;
+            }
+            argv[0] = SDL_strdup("WinRTApp");
+            argv[1] = NULL;
+            WINRT_SDLAppEntryPoint(argc, argv);
+            SDL_free(argv[0]);
+            SDL_free(argv);
+        }
     }
 }
 
@@ -590,6 +617,41 @@ void SDL_WinRTApp::OnWindowClosed(CoreWindow ^ sender, CoreWindowEventArgs ^ arg
 void SDL_WinRTApp::OnAppActivated(CoreApplicationView ^ applicationView, IActivatedEventArgs ^ args)
 {
     CoreWindow::GetForCurrentThread()->Activate();
+
+    // When the user opens an .apk file from File Explorer, UWP delivers a
+    // FileActivatedEventArgs.  Copy the file into LocalFolder (where fopen
+    // works) and store the local path so Run() can pass it as argv[1].
+    if (args->Kind == ActivationKind::File) {
+        auto fileArgs = dynamic_cast<FileActivatedEventArgs^>(args);
+        if (fileArgs && fileArgs->Files->Size > 0) {
+            auto storageItem = fileArgs->Files->GetAt(0);
+            auto storageFile = dynamic_cast<Windows::Storage::StorageFile^>(storageItem);
+            if (storageFile) {
+                WINRT_ActivatedFileCopyDone = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+                auto localFolder = Windows::Storage::ApplicationData::Current->LocalFolder;
+                concurrency::create_task(
+                    storageFile->CopyAsync(localFolder, storageFile->Name,
+                                           Windows::Storage::NameCollisionOption::ReplaceExisting)
+                ).then([](concurrency::task<Windows::Storage::StorageFile^> t) {
+                    try {
+                        auto localFile = t.get();
+                        if (localFile) {
+                            auto path = localFile->Path;
+                            std::wstring ws(path->Data());
+                            std::string narrow(ws.begin(), ws.end());
+                            SDL_snprintf(WINRT_ActivatedFilePath,
+                                         sizeof(WINRT_ActivatedFilePath),
+                                         "%s", narrow.c_str());
+                        }
+                    } catch (...) {
+                        // Copy failed; fall through to file picker in SDL_main.
+                    }
+                    if (WINRT_ActivatedFileCopyDone)
+                        SetEvent(WINRT_ActivatedFileCopyDone);
+                });
+            }
+        }
+    }
 }
 
 void SDL_WinRTApp::OnSuspending(Platform::Object ^ sender, SuspendingEventArgs ^ args)

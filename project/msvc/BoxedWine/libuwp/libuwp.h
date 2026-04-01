@@ -14,6 +14,11 @@ LIBAPI void uwp_GetLocalDirectory(char* buffer);
 LIBAPI void uwp_PickAFile(char* buffer);
 LIBAPI void uwp_PickAFolder(char* buffer);
 
+// Copy a file from an arbitrary path into the app's LocalFolder and write the
+// new local path into dest_buffer (256 bytes).  Returns true on success.
+// Needed because UWP's fopen() can only open files inside app data folders.
+LIBAPI bool uwp_CopyFileToLocal(const char* source_path, char* dest_buffer);
+
 // :: Events
 
 // If not using SDL or other helper you must occasionally call this to get anything to show on screen
