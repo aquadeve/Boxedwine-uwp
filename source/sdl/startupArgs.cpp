@@ -245,6 +245,14 @@ std::vector<BString> StartUpArgs::buildArgs() {
     if (this->disableHideCursor) {
         args.push_back(B("-disableHideCursor"));
     }
+    if (this->launchMode == LAUNCH_MODE_APKENV) {
+        args.push_back(B("-apkenv"));
+        if (!this->apkPath.isEmpty()) {
+            args.push_back(this->apkPath);
+        }
+    } else if (this->launchMode == LAUNCH_MODE_BASH) {
+        args.push_back(B("-bash"));
+    }
     return args;
 }
 
@@ -363,9 +371,22 @@ bool StartUpArgs::apply() {
     envValues.push_back(B("USER=username"));
     envValues.push_back("PWD="+this->workingDir);
     envValues.push_back(B("DISPLAY=:0"));
-    envValues.push_back(B("WINE_FAKE_WAIT_VBLANK=60"));
 
-    if (!this->ddrawOverridePath.isEmpty()) {
+    if (this->launchMode == LAUNCH_MODE_WINE) {
+        envValues.push_back(B("WINE_FAKE_WAIT_VBLANK=60"));
+    } else if (this->launchMode == LAUNCH_MODE_APKENV) {
+        // Environment expected by apkenv and the Android NDK libraries it loads
+        envValues.push_back(B("TERM=linux"));
+        envValues.push_back(B("LD_LIBRARY_PATH=/lib:/usr/lib:/lib/apkenv"));
+        envValues.push_back(B("APKENV_PLATFORM=sdl"));
+    } else if (this->launchMode == LAUNCH_MODE_BASH) {
+        // Minimal environment for an interactive shell session
+        envValues.push_back(B("TERM=xterm"));
+        envValues.push_back(B("SHELL=/bin/bash"));
+        envValues.push_back(B("PS1=[boxedwine bash]\\$ "));
+    }
+
+    if (this->launchMode == LAUNCH_MODE_WINE && !this->ddrawOverridePath.isEmpty()) {
         envValues.push_back(B("WINEDLLOVERRIDES=ddraw=n,b"));
         std::shared_ptr<FsNode> parent = Fs::getNodeFromLocalPath(BString::empty, this->ddrawOverridePath, true);
         if (!parent) {
@@ -399,11 +420,12 @@ bool StartUpArgs::apply() {
     }
 
     for(auto&& info: this->mountInfo) {
-        if (info.wine) {
+        if (info.wine && this->launchMode == LAUNCH_MODE_WINE) {
+            // Wine drive-letter mount: only meaningful when running Wine
             std::shared_ptr<FsNode> mntDir = Fs::getNodeFromLocalPath(B(""), B("/mnt"), true);
             std::shared_ptr<FsNode> drive_d = Fs::addRootDirectoryNode("/mnt/drive_"+info.localPath, info.nativePath, mntDir);
             std::shared_ptr<FsNode> parent = Fs::getNodeFromLocalPath(B(""), B("/home/username/.wine/dosdevices"), true);
-            Fs::addFileNode("/home/username/.wine/dosdevices/"+info.localPath+":", "/mnt/drive_"+info.localPath, B(""), false, parent); 
+            Fs::addFileNode("/home/username/.wine/dosdevices/"+info.localPath+":", "/mnt/drive_"+info.localPath, B(""), false, parent);
         } else {
             BString ext = info.nativePath.substr(info.nativePath.length()-4).toLowerCase();
             if (ext == ".zip") {
@@ -428,9 +450,20 @@ bool StartUpArgs::apply() {
     }
 
     if (this->args.size()==0) {
-        args.push_back(B("/bin/wine"));
-        args.push_back(B("explorer"));
-        args.push_back(B("/desktop=shell"));
+        if (this->launchMode == LAUNCH_MODE_APKENV) {
+            // Run apkenv; include the APK path if one was specified
+            args.push_back(B("/bin/apkenv"));
+            if (!this->apkPath.isEmpty()) {
+                args.push_back(this->apkPath);
+            }
+        } else if (this->launchMode == LAUNCH_MODE_BASH) {
+            // Run an interactive bash shell for debugging
+            args.push_back(B("/bin/bash"));
+        } else {
+            args.push_back(B("/bin/wine"));
+            args.push_back(B("explorer"));
+            args.push_back(B("/desktop=shell"));
+        }
     }
     if (this->args.size()) {
         std::shared_ptr<FsNode> node = Fs::getNodeFromLocalPath(workingDir, this->args[0], true);        
@@ -448,7 +481,8 @@ bool StartUpArgs::apply() {
                 validLinuxCommand = true;
             }
         }
-        if (!validLinuxCommand) {
+        if (!validLinuxCommand && this->launchMode == LAUNCH_MODE_WINE) {
+            // Not a Linux ELF: treat as a Windows path and invoke Wine
             if (Fs::doesNativePathExist(args[0])) {
                 BString dir = args[0];
                 dir = Fs::trimTrailingSlash(dir);
@@ -754,6 +788,18 @@ bool StartUpArgs::parseStartupArgs(int argc, const char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-disableHideCursor")) {
             this->disableHideCursor = true;
+        } else if (!strcmp(argv[i], "-apkenv")) {
+            // apkenv mode: run Android APK via apkenv instead of Wine
+            this->launchMode = LAUNCH_MODE_APKENV;
+            if (i+1 < argc) {
+                this->apkPath = BString::copy(argv[i+1]);
+                i++;
+            } else {
+                klog("-apkenv: no APK path provided; a path must be selected via the UI");
+            }
+        } else if (!strcmp(argv[i], "-bash")) {
+            // bash terminal mode: launch /bin/bash for debugging
+            this->launchMode = LAUNCH_MODE_BASH;
         } else {
             break;
         }
@@ -770,10 +816,12 @@ bool StartUpArgs::parseStartupArgs(int argc, const char **argv) {
         base2 = base2.substr(0, base2.length()-1); 
         if (zips.size()==0 && !nozip) {
             std::vector<Platform::ListNodeResult> results;
+            // For apkenv mode look for apkenv*.zip; otherwise look for Wine*.zip
+            const char* zipSearchKey = (this->launchMode == LAUNCH_MODE_APKENV) ? "apkenv" : "Wine";
             if (base) {
                 Platform::listNodes(BString::copy(base), results);
                 for (auto&& item : results) {
-                    if (strstr(item.name.c_str(), "Wine") && strstr(item.name.c_str(), ".zip")) {
+                    if (strstr(item.name.c_str(), zipSearchKey) && strstr(item.name.c_str(), ".zip")) {
                         this->zips.push_back(base + pathSeperator + item.name);
                         break;
                     }
@@ -783,7 +831,7 @@ bool StartUpArgs::parseStartupArgs(int argc, const char **argv) {
                 results.clear();
                 Platform::listNodes(base2, results);
                 for (auto&& item : results) {
-                    if (strstr(item.name.c_str(), "Wine") && strstr(item.name.c_str(), ".zip")) {
+                    if (strstr(item.name.c_str(), zipSearchKey) && strstr(item.name.c_str(), ".zip")) {
                         this->zips.push_back(BString(base2) + pathSeperator + item.name);
                     }
                 }
